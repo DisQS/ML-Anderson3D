@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
 import os, shutil, pathlib
 import torch
 #torch 1.10.0
@@ -28,10 +25,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 #sklearn 0.23.2
 
-
-# In[2]:
-
-
 casez = []
 casez = np.append(casez,"W15.0")
 # casez = np.append(casez,"W15.25")
@@ -50,9 +43,6 @@ casez = np.append(casez,"W16.5")
 # casez = np.append(casez,"W17.5")
 # casez = np.append(casez,"W17.75")
 casez = np.append(casez,"W18.0")
-
-
-# In[3]:
 
 
 c = []
@@ -75,9 +65,6 @@ c = np.append(c,16.5)
 c = np.append(c,18)
 
 
-
-
-# In[5]:
 path = pathlib.Path("/home/physics/phubdf/Numerical_Data")
 os.chdir(path)
 
@@ -95,7 +82,6 @@ a = pd.concat([pd.read_csv(f'{path}/labels/{file}') for file in src ], ignore_in
 a.to_csv(f'{path}/labels/labels.csv', index=False)
 
 
-# In[6]:
 
 
 class CustomImageDataset(Dataset):
@@ -121,7 +107,6 @@ class CustomImageDataset(Dataset):
         return image, label
 
 
-# In[7]:
 
 
 batch_size = 32
@@ -151,7 +136,6 @@ validation_dataloader = DataLoader(validation_data, batch_size=batch_size, shuff
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
 
-# In[8]:
 
 
 # train_features, train_labels = next(iter(train_dataloader))
@@ -163,8 +147,6 @@ test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 # print(f"Label: {label}")
 
 
-# In[14]:
-
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -173,12 +155,14 @@ print(f"Using {device} device")
 model = models.video.r3d_18()
 model.stem[0] = nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(3,7,7), stride=(1,2,2), padding=0, bias=False)
 model.fc = nn.Linear(in_features=512,out_features=len(c),bias=True)
+if 0 != 0:
+	for i in range(0,):
+		if os.path.exists(f"{path}/Numerical_Data/saved models/saved_model[{i+1}].pth"):
+					model.load_state_dict(torch.load(f"{path}/Numerical_Data/saved models/saved_model[{i+1}].pth"))
 if torch.cuda.is_available():
     model.cuda()
 print(model)
 
-
-# In[10]:
 
 
 def train(dataloader, model, loss_fn, optimizer):
@@ -201,17 +185,15 @@ def train(dataloader, model, loss_fn, optimizer):
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
 
-# In[11]:
-
 
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
 
 
-# In[15]:
-
-
 epochs = 10
+if os.path.exists(f"{path}/Numerical_Data/saved models"):
+    shutil.rmtree(f"{path}/Numerical_Data/saved models")
+os.mkdir(f"{path}/Numerical_Data/saved models")
 min_valid_loss = np.inf
 start = time.time()
 tl = np.array([])
@@ -250,7 +232,7 @@ for e in range(epochs):
         print(f'Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
         min_valid_loss = valid_loss
         # Saving State Dict
-        torch.save(model.state_dict(), 'saved_model.pth')
+        torch.save(model.state_dict(), f"{path}/Numerical_Data/saved models/saved_model[{e+1}].pth")
     else:
         print(" ")
     
@@ -260,9 +242,6 @@ for e in range(epochs):
 end = time.time()
 total = end-start
 print(f"Total runtime: {round(total,2)}s")
-
-
-# In[16]:
 
 
 x = np.arange(0,epochs,1)
@@ -276,7 +255,6 @@ plt.legend()
 plt.show()
 
 
-# In[17]:
 
 
 predict = []
@@ -296,17 +274,11 @@ for i in range(0,200*len(c)):
       
 
 
-# In[18]:
-
-
 cm = confusion_matrix(p, predict)
 print(cm)
 np.savetxt(f"cm-C{len(c)}-D30-{datetime.now()}.csv", cm, delimiter=",")
 score = round(accuracy_score(p, predict)*100,2)
 print(f"Model Accuracy: {score}%")
-
-
-# In[ ]:
 
 
 
