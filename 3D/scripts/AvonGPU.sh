@@ -1,22 +1,36 @@
 #!/bin/bash
-no=${1:-4000}
-size=${2:-30}
-epochs=${3:-10}
-re=${4:-0}
+getseed=${1:-"N"}
+no=${2:-4000}
+size=${3:-30}
+epochs=${4:-10}
+re=${5:-0}
 
-echo $no
+echo "Version:" `git describe --tags --long` echo "Branch:" `git branch --show-current`
+echo $getseed $no $size $epochs $re
 
 
 workdir=$(pwd)
+mkdir -p $workdir/N$no-L$size
 num="Num"
-
-echo $currdir
+cd ../
+numdir=$(pwd)/Numerical_Data
+fdir=$(pwd)/NBs
+workdir=$workdir/N$no-L$size
+echo $numdir
 echo $workdir
-echo $num
-job=`printf "$num-$no-$size.sh"`
-py=`printf "$num-$no-$size.py"`
 
+cd $workdir
+
+job=`printf "$fdir/$num-N$no-L$size.sh"`
+py=`printf "$fdir/$num-N$no-L$size.py"`
 echo $py
+
+now=$(date +"%T")
+echo "Current time : $now"
+
+
+
+
 
 
 cat > ${py} << EOD
@@ -26,7 +40,7 @@ cat > ${py} << EOD
 
 import os, shutil, pathlib
 import torch
-#torch 1.10.0
+#torch 1.7.1
 import pandas as pd
 
 from torch import nn
@@ -35,8 +49,10 @@ from torch.utils.data import random_split
 from torchvision import models
 from datetime import datetime
 
+
 import numpy as np
 import time
+import random
 
 import matplotlib.pyplot as plt
 #matplotlib 3.3.3
@@ -47,6 +63,9 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 #sklearn 0.23.2
+
+print(datetime.now())
+print("$no $size $epochs $re $getseed")
 
 
 casez = []
@@ -88,9 +107,29 @@ c = np.append(c,15)
 # c = np.append(c,17.75)
 c = np.append(c,18)
 
+store="N$no-L$size"
 
+torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.deterministic = True
 
-path = pathlib.Path(f"$workdir/Numerical_Data")
+if "$getseed" != "N":
+	f = open("$workdir/lastseed.txt", "r")
+	seed = int(f.read())
+	torch.manual_seed(seed)
+	random.seed(seed)
+	f.close()
+else:
+	seed = torch.seed()
+	random.seed(seed)
+
+f = open("$workdir/lastseed.txt", "w")
+f.write(str(seed))
+print("current seed: " + str(seed))
+f.close()
+
+print("initialized correctly")
+
+path = pathlib.Path("$numdir")
 os.chdir(path)
 
 if os.path.exists(f"{path}/labels"):
@@ -105,6 +144,7 @@ for i in range(0,len(casez)):
 src = os.listdir(f'{path}/labels')
 a = pd.concat([pd.read_csv(f'{path}/labels/{file}') for file in src ], ignore_index=True)
 a.to_csv(f'{path}/labels/labels.csv', index=False)
+print("created labels")
 
 
 
@@ -147,7 +187,7 @@ for i in range(0,len(casez)):
         validation_data = ConcatDataset([validation_data,validation_set])
         test_data = ConcatDataset([test_data,test_set])
         
-
+print("created dataset")
 print(len(training_data))
 print(len(validation_data))
 print(len(test_data))
@@ -182,48 +222,26 @@ model.fc = nn.Linear(in_features=512,out_features=len(c),bias=True)
 if $re != 0:
 	for i in range(0,$re):
 		if os.path.exists(f"{path}/saved models/saved_model[{i+1}].pth"):
-					model.load_state_dict(torch.load(f"{path}/saved models/saved_model[{i+1}].pth"))
-					print("Loaded model: $workdir/Numerical_Data/saved models/saved_model["+ str(i+1) + "].pth")
+					model.load_state_dict(torch.load(f"$workdir/saved models/saved_model[{i+1}].pth"))
+					print("Loaded model: $workdir/saved models/saved_model["+ str(i+1) + "].pth")
 if torch.cuda.is_available():
     model.cuda()
 print(model)
-
-
-
-def train(dataloader, model, loss_fn, optimizer):
-    size = len(dataloader.dataset)
-    model.train()
-    for batch, (X, y) in enumerate(dataloader):
-        X, y = X.to(device), y.to(device)
-
-        # Compute prediction error
-        pred = model(X)
-        loss = loss_fn(pred, y)
-
-        # Backpropagation
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if batch % 100 == 0:
-            loss, current = loss.item(), batch * len(X)
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
-
-
 
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
 
 
 epochs = $epochs - $re
-if os.path.exists(f"{path}/saved models"):
-    shutil.rmtree(f"{path}/saved models")
-os.mkdir(f"{path}/saved models")
-torch.save(model.state_dict(), f"{path}/saved models/saved_model[{$re}].pth")
+if os.path.exists(f"$workdir/saved models"):
+    shutil.rmtree(f"$workdir/saved models")
+os.mkdir(f"$workdir/saved models")
+torch.save(model.state_dict(), f"$workdir/saved models/saved_model[{$re}].pth")
 min_valid_loss = np.inf
 start = time.time()
 tl = np.array([])
 vl = np.array([])
+
 
 for e in range(epochs):
     st = time.time()
@@ -258,7 +276,7 @@ for e in range(epochs):
         print(f'Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
         min_valid_loss = valid_loss
         # Saving State Dict
-        torch.save(model.state_dict(), f"{path}/saved models/saved_model[{e+1+$re}].pth")
+        torch.save(model.state_dict(), f"$workdir/saved models/saved_model[{e+1+$re}].pth")
     else:
         print(" ")
     
@@ -269,12 +287,14 @@ end = time.time()
 total = end-start
 print(f"Total runtime: {round(total,2)}s")
 
+if not os.path.exists(f"$workdir/CSVs"):
+    os.makedirs(f"$workdir/CSVs")
 
 x = np.arange(0,epochs,1)
 plt.plot(x+1, tl, "b+", label="Training loss")
-np.savetxt(f"tl-C{len(c)}-D$size-{datetime.now()}.csv", tl, delimiter=",")
+np.savetxt(f"$workdir/CSVs/tl-C{len(c)}-D$size-{datetime.now()}.csv", tl, delimiter=",")
 plt.plot(x+1, vl, "ro", label="Validation loss")
-np.savetxt(f"vl-C{len(c)}-D$size-{datetime.now()}.csv", vl, delimiter=",")
+np.savetxt(f"$workdir/CSVs/vl-C{len(c)}-D$size-{datetime.now()}.csv", vl, delimiter=",")
 plt.title("Training and validation loss")
 plt.xlabel("epochs")
 plt.legend()
@@ -302,7 +322,7 @@ for i in range(0,int(ndata*0.05*len(c))):
 
 cm = confusion_matrix(p, predict)
 print(cm)
-np.savetxt(f"cm-C{len(c)}-D$size-{datetime.now()}.csv", cm, delimiter=",")
+np.savetxt(f"$workdir/CSVs/cm-C{len(c)}-D$size-{datetime.now()}.csv", cm, delimiter=",")
 score = round(accuracy_score(p, predict)*100,2)
 print(f"Model Accuracy: {score}%")
 
@@ -326,13 +346,15 @@ module purge
 module restore PT
 module list
 
-srun -l  $workdir/$py
+
+srun $py
+
 
 EOD
 
-chmod 755 ${workdir}/${job}
-chmod g+w ${workdir}/${job}
-chmod 755 ${workdir}/${py}
+chmod 755 ${job}
+chmod g+w ${job}
+chmod 755 ${py}
 
-sbatch ${workdir}/${job}
+sbatch ${job}
 
