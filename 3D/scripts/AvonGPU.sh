@@ -5,7 +5,7 @@ size=${3:-30}
 epochs=${4:-10}
 re=${5:-0}
 
-
+echo "Version:" `git describe --tags --long` echo "Branch:" `git branch --show-current`
 echo $getseed $no $size $epochs $re
 
 
