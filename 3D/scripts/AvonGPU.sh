@@ -1,28 +1,32 @@
 #!/bin/bash
 getseed=${1:-"N"}
-no=${2:-4000}
-size=${3:-30}
-epochs=${4:-10}
-re=${5:-0}
+epochs=${3:-50}
+re=${4:-0}
+no=${5:-4000}
+size=${6:-30}
 
 
-echo $getseed $no $size $epochs $re
+echo "Version:" `git describe --tags --long` echo "Branch:" `git branch --show-current`
+echo $getseed $epochs $re $no $size 
 
 
 workdir=$(pwd)
-mkdir -p $workdir/N$no-L$size
-num="Num"
+
 cd ../
 numdir=$(pwd)/Numerical_Data
 fdir=$(pwd)/NBs
-workdir=$workdir/N$no-L$size
+sdir=$(pwd)/scripts
+classes=$(wc --lines < "$sdir/classes.txt")
+echo $classes
+mkdir -p $workdir/N$no-L$size-$classes
+workdir=$workdir/N$no-L$size-$classes
 echo $numdir
 echo $workdir
 
 cd $workdir
 
-job=`printf "$fdir/$num-N$no-L$size.sh"`
-py=`printf "$fdir/$num-N$no-L$size.py"`
+job=`printf "$fdir/Num-N$no-L$size-$classes.sh"`
+py=`printf "$fdir/Num-N$no-L$size-$classes.py"`
 echo $py
 
 now=$(date +"%T")
@@ -32,15 +36,14 @@ echo "Current time : $now"
 
 
 
-
 cat > ${py} << EOD
 #!/usr/bin/env python
 # coding: utf-8
 
-
+print("--> importing modules")
 import os, shutil, pathlib
 import torch
-#torch 1.7.1
+print("--> torch version used = 1.7.1, version loaded = " + str(torch.__version__))
 import pandas as pd
 
 from torch import nn
@@ -54,100 +57,21 @@ import numpy as np
 import time
 import random
 
+import matplotlib
 import matplotlib.pyplot as plt
-#matplotlib 3.3.3
+print("--> matplotlib version used = 3.3.3, version loaded = " + str(matplotlib.__version__))
 import sklearn
 from sklearn.datasets import make_classification
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
-#sklearn 0.23.2
+print("--> sklearn version used = 0.23.2, version loaded = " + str(sklearn.__version__))
+
+print("--> import complete")
 
 print(datetime.now())
-print("$no $size $epochs $re $getseed")
-
-
-casez = []
-casez = np.append(casez,"W15.0")
-# casez = np.append(casez,"W15.25")
-# casez = np.append(casez,"W15.5")
-# casez = np.append(casez,"W15.75")
-# casez = np.append(casez,"W16.0")
-# casez = np.append(casez,"W16.2")
-# casez = np.append(casez,"W16.3")
-# casez = np.append(casez,"W16.4")
-# casez = np.append(casez,"W16.5")
-# casez = np.append(casez,"W16.6")
-# casez = np.append(casez,"W16.7")
-# casez = np.append(casez,"W16.8")
-# casez = np.append(casez,"W17.0")
-# casez = np.append(casez,"W17.25")
-# casez = np.append(casez,"W17.5")
-# casez = np.append(casez,"W17.75")
-casez = np.append(casez,"W18.0")
-
-
-c = []
-c = np.append(c,15)
-# c = np.append(c,15.25)
-# c = np.append(c,15.5)
-# c = np.append(c,15.75)
-# c = np.append(c,16)
-# c = np.append(c,16.2)
-# c = np.append(c,16.3)
-# c = np.append(c,16.4)
-# c = np.append(c,16.5)
-# c = np.append(c,16.6)
-# c = np.append(c,16.7)
-# c = np.append(c,16.8)
-# c = np.append(c,17)
-# c = np.append(c,17.25)
-# c = np.append(c,17.5)
-# c = np.append(c,17.75)
-c = np.append(c,18)
-
-store="N$no-L$size"
-
-torch.backends.cudnn.benchmark = False
-torch.backends.cudnn.deterministic = True
-
-if "$getseed" != "N":
-	f = open("$workdir/lastseed.txt", "r")
-	seed = int(f.read())
-	torch.manual_seed(seed)
-	random.seed(seed)
-	f.close()
-else:
-	seed = torch.seed()
-	random.seed(seed)
-
-f = open("$workdir/lastseed.txt", "w")
-f.write(str(seed))
-print("current seed: " + str(seed))
-f.close()
-
-print("initialized correctly")
-
-path = pathlib.Path("$numdir")
-os.chdir(path)
-
-if os.path.exists(f"{path}/labels"):
-    shutil.rmtree(f"{path}/labels")
-os.mkdir(f"{path}/labels")
-for i in range(0,len(casez)):
-    csv_input = pd.read_csv(f'{path}/{casez[i]}/labels.csv')
-    csv_input.replace(to_replace=0,value=i,inplace = True)
-    csv_input.to_csv(f'{path}/labels/labels{c[i]}.csv', index=False)
-
-
-src = os.listdir(f'{path}/labels')
-a = pd.concat([pd.read_csv(f'{path}/labels/{file}') for file in src ], ignore_index=True)
-a.to_csv(f'{path}/labels/labels.csv', index=False)
-print("created labels")
-
-
-
+print("$getseed $epochs $re $no $size")
 
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, img_dir, transform=None, target_transform=None):
@@ -171,9 +95,67 @@ class CustomImageDataset(Dataset):
             label = self.target_transform(label)
         return image, label
 
+print("--> defining categories")
+
+c = np.loadtxt("$sdir/classes.txt")
+print(c)
+
+
+casez = []
+for i in range (0, len(c)):
+    casez = np.append(casez, "W"+str(c[i]))
+print(casez)
+
+print("--> categories have been defined. No. of categories used = " + str(len(c)))
+
+store="N$no-L$size"
+
+torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.deterministic = True
+
+
+if "$getseed" != "N":
+	print("--> loading previous trial seed")
+	f = open("$workdir/lastseed.txt", "r")
+	seed = int(f.read())
+	torch.manual_seed(seed)
+	random.seed(seed)
+	f.close()
+	print("--> seed loaded")
+else:
+	seed = torch.seed()
+	random.seed(seed)
+
+f = open("$workdir/lastseed.txt", "w")
+f.write(str(seed))
+print("current seed: " + str(seed))
+f.close()
+
+print("--> seed saved to lastseed.txt in $workdir")
+
+path = pathlib.Path("$numdir")
+os.chdir(path)
+
+print("--> creating labels file to identify files to be used")
+if os.path.exists(f"{path}/labels"):
+    shutil.rmtree(f"{path}/labels")
+os.mkdir(f"{path}/labels")
+for i in range(0,len(casez)):
+    csv_input = pd.read_csv(f'{path}/{casez[i]}/labels.csv')
+    csv_input.replace(to_replace=0,value=i,inplace = True)
+    csv_input.to_csv(f'{path}/labels/labels{c[i]}.csv', index=False)
+
+
+src = os.listdir(f'{path}/labels')
+a = pd.concat([pd.read_csv(f'{path}/labels/{file}') for file in src ], ignore_index=True)
+a.to_csv(f'{path}/labels/labels.csv', index=False)
+
+print("--> created labels file")
 
 
 
+
+print("--> creating datasets for usage for training, validation and testing")
 batch_size = 32
 ndata = $no
 for i in range(0,len(casez)):
@@ -187,10 +169,10 @@ for i in range(0,len(casez)):
         validation_data = ConcatDataset([validation_data,validation_set])
         test_data = ConcatDataset([test_data,test_set])
         
-print("created dataset")
-print(len(training_data))
-print(len(validation_data))
-print(len(test_data))
+print("--> created datasets")
+print("--> training set contains " + str(len(training_data)) + " files")
+print("--> validation set contains " + str(len(validation_data)) + " files")
+print("--> test set contains " + str(len(test_data)) + " files")
 
 
 
@@ -216,6 +198,7 @@ print(f"Label: {label}")
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
 
+print("--> preparing model from resnet18 network")
 model = models.video.r3d_18()
 model.stem[0] = nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(3,7,7), stride=(1,2,2), padding=0, bias=False)
 model.fc = nn.Linear(in_features=512,out_features=len(c),bias=True)
@@ -226,10 +209,12 @@ if $re != 0:
 					print("Loaded model: $workdir/saved models/saved_model["+ str(i+1) + "].pth")
 if torch.cuda.is_available():
     model.cuda()
+print("--> model defined for use")
 print(model)
 
+
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+optimizer = torch.optim.SGD(model.parameters(), lr=0.013299 , momentum = 0.599124)
 
 
 epochs = $epochs - $re
@@ -242,7 +227,7 @@ start = time.time()
 tl = np.array([])
 vl = np.array([])
 
-
+print("--> begining training")
 for e in range(epochs):
     st = time.time()
     train_loss = 0.0
@@ -290,11 +275,18 @@ print(f"Total runtime: {round(total,2)}s")
 if not os.path.exists(f"$workdir/CSVs"):
     os.makedirs(f"$workdir/CSVs")
 
+
 x = np.arange(0,epochs,1)
 plt.plot(x+1, tl, "b+", label="Training loss")
+
+print("--> storing training loss values")
 np.savetxt(f"$workdir/CSVs/tl-C{len(c)}-D$size-{datetime.now()}.csv", tl, delimiter=",")
+
 plt.plot(x+1, vl, "ro", label="Validation loss")
+
+print("--> storing validation loss values")
 np.savetxt(f"$workdir/CSVs/vl-C{len(c)}-D$size-{datetime.now()}.csv", vl, delimiter=",")
+
 plt.title("Training and validation loss")
 plt.xlabel("epochs")
 plt.legend()
@@ -302,7 +294,7 @@ plt.show()
 
 
 
-
+print("--> testing model against test data (to see model accuracy)")
 predict = []
 p = []
 model.eval()
@@ -317,28 +309,28 @@ for i in range(0,int(ndata*0.05*len(c))):
         predicted = torch.Tensor.cpu(predicted)
         predict = np.append(predict, predicted)
         p = np.append(p, actual)
-      
+print("--> test complete")
 
-
+print("--> computing confusion matrix")
 cm = confusion_matrix(p, predict)
 print(cm)
+print("--> saving confusion matrix")
 np.savetxt(f"$workdir/CSVs/cm-C{len(c)}-D$size-{datetime.now()}.csv", cm, delimiter=",")
 score = round(accuracy_score(p, predict)*100,2)
 print(f"Model Accuracy: {score}%")
 
-
+print("--> task complete")
 EOD
 
 
 cat > ${job} << EOD
-#!/bin/bash
 #!/bin/bash
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem-per-cpu=3700
-#SBATCH --time=8:00:00
+#SBATCH --time=48:00:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:quadro_rtx_6000:1
 
