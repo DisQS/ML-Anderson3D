@@ -5,9 +5,14 @@ re=${4:-0}
 no=${5:-4000}
 size=${6:-30}
 
+<<<<<<< HEAD
 
 echo "Version:" `git describe --tags --long` echo "Branch:" `git branch --show-current`
 echo $getseed $epochs $re $no $size 
+=======
+echo "Version:" `git describe --tags --long` echo "Branch:" `git branch --show-current`
+echo $getseed $no $size $epochs $re
+>>>>>>> 089d632155d3317252e8dda42ce13cdf6bf1d358
 
 
 workdir=$(pwd)
