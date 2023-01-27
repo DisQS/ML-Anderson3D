@@ -5,8 +5,9 @@ re=${3:-0}
 no=${4:-4000}
 size=${5:-30}
 
-echo "Version:" `git describe --tags --long` echo "Branch:" `git branch --show-current`
-echo $getseed $no $size $epochs $re
+echo $getseed $epochs $re $no $size 
+
+
 
 workdir=$(pwd)
 
@@ -53,6 +54,7 @@ from datetime import datetime
 
 
 import numpy as np
+import pickle
 import time
 import random
 
@@ -84,7 +86,7 @@ class CustomImageDataset(Dataset):
 
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
-        image = np.genfromtxt(f"{img_path}")
+        image = np.load(img_path, allow_pickle=True)
         image = np.square(image)
         image = image.reshape(1,$size,$size,$size)
         label = self.img_labels.iloc[idx, 1]
@@ -155,7 +157,7 @@ print("--> created labels file")
 
 ###################################
 print("--> creating datasets for usage for training, validation and testing")
-batch_size = 32
+batch_size = 8
 ndata = $no
 for i in range(0,len(casez)):
     if i == 0:
