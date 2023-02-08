@@ -16,17 +16,18 @@ numdir=$(pwd)/ND$size
 echo $numdir
 fdir=$(pwd)/NBs
 sdir=$(pwd)/scripts
-classes=$(wc --lines < "$sdir/classes.txt")
+cdir=$sdir/class.txt
+classes=$(wc --lines < $cdir)
 echo $classes
-mkdir -p $workdir/N$no-L$size-$classes
-workdir=$workdir/N$no-L$size-$classes
+mkdir -p $workdir/P$no-L$size-$classes
+workdir=$workdir/P$no-L$size-$classes
 echo $numdir
 echo $workdir
 
 cd $workdir
 
-job=`printf "$fdir/Num-N$no-L$size-$classes.sh"`
-py=`printf "$fdir/Num-N$no-L$size-$classes.py"`
+job=`printf "$fdir/Phase-N$no-L$size-$classes.sh"`
+py=`printf "$fdir/Phase-N$no-L$size-$classes.py"`
 echo $py
 
 now=$(date +"%T")
@@ -54,7 +55,6 @@ from datetime import datetime
 
 
 import numpy as np
-import pickle
 import time
 import random
 
@@ -98,7 +98,7 @@ class CustomImageDataset(Dataset):
 
 print("--> defining categories")
 
-c = np.loadtxt("$sdir/classes.txt")
+c = np.loadtxt("$cdir")
 print(c)
 
 
@@ -142,9 +142,10 @@ if os.path.exists(f"{path}/labels"):
     shutil.rmtree(f"{path}/labels")
 os.mkdir(f"{path}/labels")
 for i in range(0,len(casez)):
-    csv_input = pd.read_csv(f'{path}/{casez[i]}/labels.csv')
-    csv_input.replace(to_replace=0,value=i,inplace = True)
-    csv_input.to_csv(f'{path}/labels/labels{c[i]}.csv', index=False)
+	csv_input = pd.read_csv(f'{path}/{casez[i]}/labels.csv')
+	if c[i] > 16.5:
+		csv_input.replace(to_replace=0,value=1,inplace = True)
+	csv_input.to_csv(f'{path}/labels/labels{c[i]}.csv', index=False)
 
 
 src = os.listdir(f'{path}/labels')
@@ -155,14 +156,13 @@ print("--> created labels file")
 
 
 
-###################################
+
 print("--> creating datasets for usage for training, validation and testing")
-batch_size = 8
+batch_size = 32
 ndata = $no
 for i in range(0,len(casez)):
     if i == 0:
         data = CustomImageDataset(annotations_file=f"{path}/labels/labels{c[i]}.csv",img_dir=f"{path}/{casez[i]}")
-        print(len(data))
         training_data, validation_data, test_data = random_split(data,[int(ndata*0.8),int(ndata*0.15),int(ndata*0.05)])
     else:
         data = CustomImageDataset(annotations_file=f"{path}/labels/labels{c[i]}.csv",img_dir=f"{path}/{casez[i]}")
@@ -203,7 +203,7 @@ print(f"Using {device} device")
 print("--> preparing model from resnet18 network")
 model = models.video.r3d_18()
 model.stem[0] = nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(3,7,7), stride=(1,2,2), padding=0, bias=False)
-model.fc = nn.Linear(in_features=512,out_features=len(c),bias=True)
+model.fc = nn.Linear(in_features=512,out_features=2,bias=True)
 if $re != 0:
 	for i in range(0,$re):
 		if os.path.exists(f"$workdir/saved models/saved_model[{i+1}].pth"):
@@ -214,19 +214,19 @@ if torch.cuda.is_available():
 print("--> model defined for use")
 print(model)
 
-################################
+
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0117395, eps=4.5765e-08, weight_decay=0.000138954)
+optimizer = torch.optim.SGD(model.parameters(), lr=0.013299 , momentum = 0.599124)
 print(f"optimizer used: {optimizer}")
 
 
 epochs = $epochs - $re
-if $re == 0:
-    if os.path.exists(f"$workdir/saved models"):
-        shutil.rmtree(f"$workdir/saved models")
-    os.mkdir(f"$workdir/saved models")
+if os.path.exists(f"$workdir/saved models"):
+    shutil.rmtree(f"$workdir/saved models")
+os.mkdir(f"$workdir/saved models")
 torch.save(model.state_dict(), f"$workdir/saved models/saved_model[{$re}].pth")
 min_valid_loss = np.inf
+start = time.time()
 tl = np.array([])
 vl = np.array([])
 
@@ -305,10 +305,25 @@ for e in range(epochs):
     np.savetxt(f"$workdir/cm-C{len(c)}-D$size-{e+$re}.csv", cm, delimiter=",")
 
 
+if not os.path.exists(f"$workdir/CSVs"):
+    os.makedirs(f"$workdir/CSVs")
 
 
+x = np.arange(0,epochs,1)
+plt.plot(x+1, tl, "b+", label="Training loss")
 
+print("--> storing training loss values")
+np.savetxt(f"$workdir/CSVs/tl-C{len(c)}-D$size-{datetime.now()}.csv", tl, delimiter=",")
 
+plt.plot(x+1, vl, "ro", label="Validation loss")
+
+print("--> storing validation loss values")
+np.savetxt(f"$workdir/CSVs/vl-C{len(c)}-D$size-{datetime.now()}.csv", vl, delimiter=",")
+
+plt.title("Training and validation loss")
+plt.xlabel("epochs")
+plt.legend()
+plt.show()
 
 
 
@@ -333,7 +348,7 @@ print("--> computing confusion matrix")
 cm = confusion_matrix(p, predict)
 print(cm)
 print("--> saving confusion matrix")
-np.savetxt(f"$workdir/cm-C{len(c)}-D$size-{datetime.now()}.csv", cm, delimiter=",")
+np.savetxt(f"$workdir/CSVs/cm-C{len(c)}-D$size-{datetime.now()}.csv", cm, delimiter=",")
 score = round(accuracy_score(p, predict)*100,2)
 print(f"Model Accuracy: {score}%")
 

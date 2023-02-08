@@ -13,9 +13,11 @@ workdir=$(pwd)
 
 cd ../
 numdir=$(pwd)/ND$size
+echo $numdir
 fdir=$(pwd)/NBs
 sdir=$(pwd)/scripts
-classes=$(wc --lines < "$sdir/classes.txt")
+cdir=$sdir/class.txt
+classes=$(wc --lines < $cdir)
 echo $classes
 mkdir -p $workdir/P$no-L$size-$classes
 workdir=$workdir/P$no-L$size-$classes
@@ -96,7 +98,7 @@ class CustomImageDataset(Dataset):
 
 print("--> defining categories")
 
-c = np.loadtxt("$sdir/classes.txt")
+c = np.loadtxt("$cdir")
 print(c)
 
 
@@ -219,9 +221,10 @@ print(f"optimizer used: {optimizer}")
 
 
 epochs = $epochs - $re
-if os.path.exists(f"$workdir/saved models"):
-    shutil.rmtree(f"$workdir/saved models")
-os.mkdir(f"$workdir/saved models")
+if $re == 0:
+    if os.path.exists(f"$workdir/saved models"):
+        shutil.rmtree(f"$workdir/saved models")
+    os.mkdir(f"$workdir/saved models")
 torch.save(model.state_dict(), f"$workdir/saved models/saved_model[{$re}].pth")
 min_valid_loss = np.inf
 start = time.time()
