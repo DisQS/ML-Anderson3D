@@ -217,7 +217,7 @@ print(model)
 
 ################################
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0117395, eps=4.5765e-08, weight_decay=0.000138954)
+optimizer = torch.optim.Adam(model.parameters())
 print(f"optimizer used: {optimizer}")
 
 
@@ -360,11 +360,12 @@ cat > ${job} << EOD
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem-per-cpu=3700
-#SBATCH --time=48:00:00
+#SBATCH --cpus-per-task=42
+#SBATCH --mem-per-cpu=3850
+#SBATCH --gres=gpu:ampere_a100:1
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:quadro_rtx_6000:1
+#SBATCH --time=48:00:00
+#SBATCH --account=su007-rr-gpu
 
 module purge
 module restore PT
