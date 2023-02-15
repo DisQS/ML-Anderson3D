@@ -16,7 +16,8 @@ numdir=$(pwd)/ND$size
 echo $numdir
 fdir=$(pwd)/NBs
 sdir=$(pwd)/scripts
-classes=$(wc --lines < "$sdir/classes.txt")
+cdir=$sdir/class.txt
+classes=$(wc --lines < $cdir)
 echo $classes
 mkdir -p $workdir/N$no-L$size-$classes
 workdir=$workdir/N$no-L$size-$classes
@@ -98,7 +99,7 @@ class CustomImageDataset(Dataset):
 
 print("--> defining categories")
 
-c = np.loadtxt("$sdir/classes.txt")
+c = np.loadtxt("$cdir")
 print(c)
 
 
@@ -202,7 +203,7 @@ print(f"Using {device} device")
 
 print("--> preparing model from resnet18 network")
 model = models.video.r3d_18()
-model.stem[0] = nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(3,3,3), stride=(1,1,1), padding=(1,1,1),dilation=(1,1,1), bias=False)
+model.stem[0] = nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(3,3,3), stride=(1,1,1), padding=(1,1,1), dilation=(1,1,1), bias=False)
 model.fc = nn.Linear(in_features=512,out_features=len(c),bias=True)
 if $re != 0:
 	for i in range(0,$re):
