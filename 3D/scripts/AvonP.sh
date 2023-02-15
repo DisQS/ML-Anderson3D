@@ -241,13 +241,11 @@ for e in range(epochs):
         
         optimizer.zero_grad()
         target = model(data.float())
-        
 
-
-    loss = loss_fn(target,labels)
-    loss.backward()
-    optimizer.step()
-    train_loss += loss.item()
+        loss = loss_fn(target,labels)
+    	loss.backward()
+    	optimizer.step()
+    	train_loss += loss.item()
 
     print("--> creating training confusion matrix")
     predict = []
@@ -264,6 +262,7 @@ for e in range(epochs):
             predicted = torch.Tensor.cpu(predicted)
             predict = np.append(predict, predicted)
             p = np.append(p, actual)
+
     print("--> computing confusion matrix")
     cm = confusion_matrix(p, predict)
     print(cm)
@@ -276,11 +275,10 @@ for e in range(epochs):
         if torch.cuda.is_available():
             vdata, vlabels = vdata.cuda(), vlabels.cuda()
         
-        vtarget = model(vdata.float())
-        
-        
+        vtarget = model(vdata.float())     
         vloss = loss_fn(vtarget,vlabels)
         valid_loss = vloss.item() * data.size(0)
+
     print("--> creating training confusion matrix")
     vpredict = []
     vp = []
