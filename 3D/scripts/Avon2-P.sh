@@ -16,7 +16,7 @@ numdir=$(pwd)/ND$size
 echo $numdir
 fdir=$(pwd)/NBs
 sdir=$(pwd)/scripts
-cdir=$sdir/class.txt
+cdir=$sdir/classes.txt
 classes=$(wc --lines < $cdir)
 echo $classes
 mkdir -p $workdir/P$no-L$size-$classes
@@ -216,7 +216,7 @@ print(model)
 
 
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.013299 , momentum = 0.599124)
+optimizer = torch.optim.Adam(model.parameters())
 print(f"optimizer used: {optimizer}")
 
 
@@ -236,6 +236,7 @@ for e in range(epochs):
     train_loss = 0.0
     model.train()     # Optional when not using Model Specific layer
     for data, labels in train_dataloader:
+        print(data)
         if torch.cuda.is_available():
             data, labels = data.cuda(), labels.cuda()
         
@@ -246,16 +247,59 @@ for e in range(epochs):
         optimizer.step()
         train_loss += loss.item()
     
+    print("--> creating training confusion matrix")
+    predict = []
+    p = []
+    model.eval()
+    for i in range(0,int(ndata*0.8*len(c))):
+        x, y = training_data[i][0], training_data[i][1]
+        x = x.reshape(1,1,$size,$size,$size)
+        x = torch.from_numpy(x)
+        x = x.float()
+        with torch.no_grad():
+            pred = model (x.cuda()) if torch.cuda.is_available() else model(x)
+            predicted, actual = pred[0].argmax(0), y 
+            predicted = torch.Tensor.cpu(predicted)
+            predict = np.append(predict, predicted)
+            p = np.append(p, actual)
+
+    print("--> computing confusion matrix")
+    cm = confusion_matrix(p, predict)
+    print(cm)
+    print("--> saving confusion matrix")
+    np.savetxt(f"$workdir/cm-train-C{len(c)}-D$size-{e+$re}.csv", cm, delimiter=",")
+    
     valid_loss = 0.0
     model.eval()     # Optional when not using Model Specific layer
-    for data, labels in validation_dataloader:
+    for vdata, vlabels in validation_dataloader:
         if torch.cuda.is_available():
-            data, labels = data.cuda(), labels.cuda()
+            vdata, vlabels = vdata.cuda(), vlabels.cuda()
         
-        target = model(data.float())
-        loss = loss_fn(target,labels)
-        valid_loss = loss.item() * data.size(0)
-
+        vtarget = model(vdata.float())     
+        vloss = loss_fn(vtarget,vlabels)
+        valid_loss = vloss.item() * data.size(0)
+    
+    print("--> creating training confusion matrix")
+    vpredict = []
+    vp = []
+    model.eval()
+    for i in range(0,int(ndata*0.15*len(c))):
+        x, y = validation_data[i][0], validation_data[i][1]
+        x = x.reshape(1,1,$size,$size,$size)
+        x = torch.from_numpy(x)
+        x = x.float()
+        with torch.no_grad():
+            vpred = model (x.cuda()) if torch.cuda.is_available() else model(x)
+            vpredicted, vactual = vpred[0].argmax(0), y 
+            vpredicted = torch.Tensor.cpu(vpredicted)
+            vpredict = np.append(vpredict, vpredicted)
+            vp = np.append(vp, vactual)
+    print("--> computing confusion matrix")
+    vcm = confusion_matrix(vp, vpredict)
+    print(vcm)
+    print("--> saving confusion matrix")
+    np.savetxt(f"$workdir/cm-valid-C{len(c)}-D$size-{e+$re}.csv", vcm, delimiter=",")
+    
     et = time.time()
     rt = et-st
 
@@ -282,8 +326,8 @@ for e in range(epochs):
     f.close()
 
     print("--> testing model against test data (to see model accuracy)")
-    predict = []
-    p = []
+    tpredict = []
+    tp = []
     model.eval()
     for i in range(0,int(ndata*0.05*len(c))):
         x, y = test_data[i][0], test_data[i][1]
@@ -291,66 +335,19 @@ for e in range(epochs):
         x = torch.from_numpy(x)
         x = x.float()
         with torch.no_grad():
-            pred = model (x.cuda()) if torch.cuda.is_available() else model(x)
-            predicted, actual = pred[0].argmax(0), y 
-            predicted = torch.Tensor.cpu(predicted)
-            predict = np.append(predict, predicted)
-            p = np.append(p, actual)
+            tpred = model (x.cuda()) if torch.cuda.is_available() else model(x)
+            tpredicted, tactual = tpred[0].argmax(0), y 
+            tpredicted = torch.Tensor.cpu(tpredicted)
+            tpredict = np.append(tpredict, tpredicted)
+            tp = np.append(tp, tactual)
 
 
     print("--> computing confusion matrix")
-    cm = confusion_matrix(p, predict)
-    print(cm)
+    tcm = confusion_matrix(tp, tpredict)
+    print(tcm)
     print("--> saving confusion matrix")
-    np.savetxt(f"$workdir/cm-C{len(c)}-D$size-{e+$re}.csv", cm, delimiter=",")
+    np.savetxt(f"$workdir/cm-test-C{len(c)}-D$size-{e+$re}.csv", tcm, delimiter=",")
 
-
-if not os.path.exists(f"$workdir/CSVs"):
-    os.makedirs(f"$workdir/CSVs")
-
-
-x = np.arange(0,epochs,1)
-plt.plot(x+1, tl, "b+", label="Training loss")
-
-print("--> storing training loss values")
-np.savetxt(f"$workdir/CSVs/tl-C{len(c)}-D$size-{datetime.now()}.csv", tl, delimiter=",")
-
-plt.plot(x+1, vl, "ro", label="Validation loss")
-
-print("--> storing validation loss values")
-np.savetxt(f"$workdir/CSVs/vl-C{len(c)}-D$size-{datetime.now()}.csv", vl, delimiter=",")
-
-plt.title("Training and validation loss")
-plt.xlabel("epochs")
-plt.legend()
-plt.show()
-
-
-
-print("--> testing model against test data (to see model accuracy)")
-predict = []
-p = []
-model.eval()
-for i in range(0,int(ndata*0.05*len(c))):
-    x, y = test_data[i][0], test_data[i][1]
-    x = x.reshape(1,1,$size,$size,$size)
-    x = torch.from_numpy(x)
-    x = x.float()
-    with torch.no_grad():
-        pred = model (x.cuda()) if torch.cuda.is_available() else model(x)
-        predicted, actual = pred[0].argmax(0), y 
-        predicted = torch.Tensor.cpu(predicted)
-        predict = np.append(predict, predicted)
-        p = np.append(p, actual)
-print("--> test complete")
-
-print("--> computing confusion matrix")
-cm = confusion_matrix(p, predict)
-print(cm)
-print("--> saving confusion matrix")
-np.savetxt(f"$workdir/CSVs/cm-C{len(c)}-D$size-{datetime.now()}.csv", cm, delimiter=",")
-score = round(accuracy_score(p, predict)*100,2)
-print(f"Model Accuracy: {score}%")
 
 print("--> task complete")
 EOD
