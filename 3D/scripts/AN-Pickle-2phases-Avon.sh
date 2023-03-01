@@ -40,24 +40,19 @@ echo "Current time : $now"
 cat > ${py} << EOD
 #!/usr/bin/env python
 # coding: utf-8
-
 print("--> importing modules")
 import os, shutil, pathlib
 import torch
 print("--> torch version used = 1.7.1, version loaded = " + str(torch.__version__))
 import pandas as pd
-
 from torch import nn
 from torch.utils.data import DataLoader, Dataset, ConcatDataset
 from torch.utils.data import random_split
 from torchvision import models
 from datetime import datetime
-
-
 import numpy as np
 import time
 import random
-
 import matplotlib
 import matplotlib.pyplot as plt
 print("--> matplotlib version used = 3.3.3, version loaded = " + str(matplotlib.__version__))
@@ -68,25 +63,20 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 print("--> sklearn version used = 0.23.2, version loaded = " + str(sklearn.__version__))
-
 print("--> import complete")
-
 print(datetime.now())
 print("$getseed $epochs $re $no $size")
-
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, img_dir, transform=None, target_transform=None):
         self.img_labels = pd.read_csv(annotations_file, nrows=$no)
         self.img_dir = img_dir
         self.transform = transform
         self.target_transform = target_transform
-
     def __len__(self):
         return len(self.img_labels)
-
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
-        image = np.loadtxt(f"{img_path}")
+        image = np.load(img_path, allow_pickle=True)
         image = np.square(image)
         image = image.reshape(1,$size,$size,$size)
         label = self.img_labels.iloc[idx, 1]
@@ -95,26 +85,17 @@ class CustomImageDataset(Dataset):
         if self.target_transform:
             label = self.target_transform(label)
         return image, label
-
 print("--> defining categories")
-
 c = np.loadtxt("$cdir")
 print(c)
-
-
 casez = []
 for i in range (0, len(c)):
     casez = np.append(casez, "W"+str(c[i]))
 print(casez)
-
 print("--> categories have been defined. No. of categories used = " + str(len(c)))
-
 store="N$no-L$size"
-
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
-
-
 if "$getseed" != "N":
 	print("--> loading previous trial seed")
 	f = open("$workdir/lastseed.txt", "r")
@@ -126,17 +107,13 @@ if "$getseed" != "N":
 else:
 	seed = torch.seed()
 	random.seed(seed)
-
 f = open("$workdir/lastseed.txt", "w")
 f.write(str(seed))
 print("current seed: " + str(seed))
 f.close()
-
 print("--> seed saved to lastseed.txt in $workdir")
-
 path = pathlib.Path("$numdir")
 os.chdir(path)
-
 print("--> creating labels file to identify files to be used")
 if os.path.exists(f"{path}/labels"):
     shutil.rmtree(f"{path}/labels")
@@ -146,17 +123,10 @@ for i in range(0,len(casez)):
 	if c[i] > 16.5:
 		csv_input.replace(to_replace=0,value=1,inplace = True)
 	csv_input.to_csv(f'{path}/labels/labels{c[i]}.csv', index=False)
-
-
 src = os.listdir(f'{path}/labels')
 a = pd.concat([pd.read_csv(f'{path}/labels/{file}') for file in src ], ignore_index=True)
 a.to_csv(f'{path}/labels/labels.csv', index=False)
-
 print("--> created labels file")
-
-
-
-
 print("--> creating datasets for usage for training, validation and testing")
 batch_size = 32
 ndata = $no
@@ -175,31 +145,19 @@ print("--> created datasets")
 print("--> training set contains " + str(len(training_data)) + " files")
 print("--> validation set contains " + str(len(validation_data)) + " files")
 print("--> test set contains " + str(len(test_data)) + " files")
-
-
-
 # Create data loaders.
-
 train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 validation_dataloader = DataLoader(validation_data, batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
-
-
-
-
 train_features, train_labels = next(iter(train_dataloader))
 print(f"Feature batch shape: {train_features.size()}")
 print(f"Labels batch shape: {train_labels.size()}")
 img = train_features[0].squeeze()
 label = train_labels
 print(f"Label: {label}")
-
-
-
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
-
 print("--> preparing model from resnet18 network")
 model = models.video.r3d_18()
 model.stem[0] = nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(3,7,7), stride=(1,2,2), padding=0, bias=False)
@@ -213,24 +171,18 @@ if torch.cuda.is_available():
     model.cuda()
 print("--> model defined for use")
 print(model)
-
-
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(model.parameters(), lr=0.013299 , momentum = 0.599124)
 print(f"optimizer used: {optimizer}")
-
-
 epochs = $epochs - $re
-if $re == 0:
-    if os.path.exists(f"$workdir/saved models"):
-        shutil.rmtree(f"$workdir/saved models")
-    os.mkdir(f"$workdir/saved models")
+if os.path.exists(f"$workdir/saved models"):
+    shutil.rmtree(f"$workdir/saved models")
+os.mkdir(f"$workdir/saved models")
 torch.save(model.state_dict(), f"$workdir/saved models/saved_model[{$re}].pth")
 min_valid_loss = np.inf
 start = time.time()
 tl = np.array([])
 vl = np.array([])
-
 print("--> beginning training")
 for e in range(epochs):
     st = time.time()
@@ -242,21 +194,64 @@ for e in range(epochs):
         
         optimizer.zero_grad()
         target = model(data.float())
+
         loss = loss_fn(target,labels)
         loss.backward()
         optimizer.step()
         train_loss += loss.item()
+
+    print("--> creating training confusion matrix")
+    predict = []
+    p = []
+    model.eval()
+    for i in range(0,int(ndata*0.8*len(c))):
+        x, y = training_data[i][0], training_data[i][1]
+        x = x.reshape(1,1,$size,$size,$size)
+        x = torch.from_numpy(x)
+        x = x.float()
+        with torch.no_grad():
+            pred = model (x.cuda()) if torch.cuda.is_available() else model(x)
+            predicted, actual = pred[0].argmax(0), y 
+            predicted = torch.Tensor.cpu(predicted)
+            predict = np.append(predict, predicted)
+            p = np.append(p, actual)
+
+    print("--> computing confusion matrix")
+    cm = confusion_matrix(p, predict)
+    print(cm)
+    print("--> saving confusion matrix")
+    np.savetxt(f"$workdir/cm-train-C{len(c)}-D$size-{e+$re}.csv", cm, delimiter=",")
     
     valid_loss = 0.0
     model.eval()     # Optional when not using Model Specific layer
-    for data, labels in validation_dataloader:
+    for vdata, vlabels in validation_dataloader:
         if torch.cuda.is_available():
-            data, labels = data.cuda(), labels.cuda()
+            vdata, vlabels = vdata.cuda(), vlabels.cuda()
         
-        target = model(data.float())
-        loss = loss_fn(target,labels)
-        valid_loss = loss.item() * data.size(0)
+        vtarget = model(vdata.float())     
+        vloss = loss_fn(vtarget,vlabels)
+        valid_loss = vloss.item() * data.size(0)
 
+    print("--> creating training confusion matrix")
+    vpredict = []
+    vp = []
+    model.eval()
+    for i in range(0,int(ndata*0.15*len(c))):
+        x, y = validation_data[i][0], validation_data[i][1]
+        x = x.reshape(1,1,$size,$size,$size)
+        x = torch.from_numpy(x)
+        x = x.float()
+        with torch.no_grad():
+            vpred = model (x.cuda()) if torch.cuda.is_available() else model(x)
+            vpredicted, vactual = vpred[0].argmax(0), y 
+            vpredicted = torch.Tensor.cpu(vpredicted)
+            vpredict = np.append(vpredict, vpredicted)
+            vp = np.append(vp, vactual)
+    print("--> computing confusion matrix")
+    vcm = confusion_matrix(vp, vpredict)
+    print(vcm)
+    print("--> saving confusion matrix")
+    np.savetxt(f"$workdir/cm-valid-C{len(c)}-D$size-{e+$re}.csv", vcm, delimiter=",")
     et = time.time()
     rt = et-st
 
@@ -283,8 +278,8 @@ for e in range(epochs):
     f.close()
 
     print("--> testing model against test data (to see model accuracy)")
-    predict = []
-    p = []
+    tpredict = []
+    tp = []
     model.eval()
     for i in range(0,int(ndata*0.05*len(c))):
         x, y = test_data[i][0], test_data[i][1]
@@ -292,66 +287,19 @@ for e in range(epochs):
         x = torch.from_numpy(x)
         x = x.float()
         with torch.no_grad():
-            pred = model (x.cuda()) if torch.cuda.is_available() else model(x)
-            predicted, actual = pred[0].argmax(0), y 
-            predicted = torch.Tensor.cpu(predicted)
-            predict = np.append(predict, predicted)
-            p = np.append(p, actual)
+            tpred = model (x.cuda()) if torch.cuda.is_available() else model(x)
+            tpredicted, tactual = tpred[0].argmax(0), y 
+            tpredicted = torch.Tensor.cpu(tpredicted)
+            tpredict = np.append(tpredict, tpredicted)
+            tp = np.append(tp, tactual)
 
 
     print("--> computing confusion matrix")
-    cm = confusion_matrix(p, predict)
-    print(cm)
+    tcm = confusion_matrix(tp, tpredict)
+    print(tcm)
     print("--> saving confusion matrix")
-    np.savetxt(f"$workdir/cm-C{len(c)}-D$size-{e+$re}.csv", cm, delimiter=",")
+    np.savetxt(f"$workdir/cm-test-C{len(c)}-D$size-{e+$re}.csv", tcm, delimiter=",")
 
-
-if not os.path.exists(f"$workdir/CSVs"):
-    os.makedirs(f"$workdir/CSVs")
-
-
-x = np.arange(0,epochs,1)
-plt.plot(x+1, tl, "b+", label="Training loss")
-
-print("--> storing training loss values")
-np.savetxt(f"$workdir/CSVs/tl-C{len(c)}-D$size-{datetime.now()}.csv", tl, delimiter=",")
-
-plt.plot(x+1, vl, "ro", label="Validation loss")
-
-print("--> storing validation loss values")
-np.savetxt(f"$workdir/CSVs/vl-C{len(c)}-D$size-{datetime.now()}.csv", vl, delimiter=",")
-
-plt.title("Training and validation loss")
-plt.xlabel("epochs")
-plt.legend()
-plt.show()
-
-
-
-print("--> testing model against test data (to see model accuracy)")
-predict = []
-p = []
-model.eval()
-for i in range(0,int(ndata*0.05*len(c))):
-    x, y = test_data[i][0], test_data[i][1]
-    x = x.reshape(1,1,$size,$size,$size)
-    x = torch.from_numpy(x)
-    x = x.float()
-    with torch.no_grad():
-        pred = model (x.cuda()) if torch.cuda.is_available() else model(x)
-        predicted, actual = pred[0].argmax(0), y 
-        predicted = torch.Tensor.cpu(predicted)
-        predict = np.append(predict, predicted)
-        p = np.append(p, actual)
-print("--> test complete")
-
-print("--> computing confusion matrix")
-cm = confusion_matrix(p, predict)
-print(cm)
-print("--> saving confusion matrix")
-np.savetxt(f"$workdir/CSVs/cm-C{len(c)}-D$size-{datetime.now()}.csv", cm, delimiter=",")
-score = round(accuracy_score(p, predict)*100,2)
-print(f"Model Accuracy: {score}%")
 
 print("--> task complete")
 EOD
@@ -383,4 +331,3 @@ chmod g+w ${job}
 chmod 755 ${py}
 
 sbatch ${job}
-
