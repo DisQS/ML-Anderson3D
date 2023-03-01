@@ -1,14 +1,14 @@
 #!/bin/bash
-getseed=${1:-"N"}
-epochs=${2:-50}
-re=${3:-0}
-no=${4:-4000}
-size=${5:-30}
+getseed=${1:-"N"} #Set to Y if you what to reuse stored seed
+epochs=${2:-50} #No of epochs
+re=${3:-0} #Set restart point
+no=${4:-4000} #Number of smaples to take from each category
+size=${5:-30} #System size used
 
 echo $getseed $epochs $re $no $size 
 
 
-
+#execute file in terminal while in the output folder
 workdir=$(pwd)
 
 cd ../
@@ -16,7 +16,7 @@ numdir=$(pwd)/ND$size
 echo $numdir
 fdir=$(pwd)/NBs
 sdir=$(pwd)/scripts
-cdir=$sdir/class.txt
+cdir=$sdir/class.txt #Set the categories you want to use in the class.txt file
 classes=$(wc --lines < $cdir)
 echo $classes
 mkdir -p $workdir/N$no-L$size-$classes
