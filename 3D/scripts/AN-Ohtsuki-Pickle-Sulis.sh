@@ -43,7 +43,7 @@ cat > ${py} << EOD
 print("--> importing modules")
 import os, shutil, pathlib
 import torch
-print("--> torch version used = 1.7.1, version loaded = " + str(torch.__version__))
+print("--> torch version used = 1.9.0, version loaded = " + str(torch.__version__))
 import pandas as pd
 from torch import nn
 from torch.utils.data import DataLoader, Dataset, ConcatDataset
@@ -340,6 +340,14 @@ cat > ${job} << EOD
 #SBATCH --time=48:00:00
 #SBATCH --account=su007-rr-gpu
 module purge
+
+#this list of modules has been loaded into the collection PT
+#module load GCCcore/10.2.0
+#module load Python/3.8.6
+#module load GCC/10.2.0  CUDA/11.1.1  OpenMPI/4.0.5
+#module load PyTorch/1.9.0
+#module load torchvision/0.10.0-PyTorch-1.9.0 matplotlib/3.3.3 scikit-learn/0.23.2
+
 module restore PT
 module list
 srun $py
