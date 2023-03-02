@@ -306,9 +306,21 @@ cat > ${job} << EOD
 #SBATCH --gres=gpu:quadro_rtx_6000:1
 #SBATCH --partition=gpu
 #SBATCH --time=48:00:00
+
 module purge
+
+# the following modules have been saved into collection PT
+#module load GCCcore/10.2.0
+#module load Python/3.8.6
+#module load GCC/10.2.0  CUDA/11.1.1  OpenMPI/4.0.5
+#module load PyTorch/1.7.1
+#module load torchvision/0.8.2-PyTorch-1.7.1 
+#module load scikit-learn/0.23.2 
+#module load matplotlib/3.3.3
+
 module restore PT
 module list
+
 srun $py
 EOD
 
