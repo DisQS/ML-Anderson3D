@@ -19,15 +19,15 @@ sdir=$(pwd)/scripts
 cdir=$sdir/class.txt #Set the categories you want to use in the class.txt file
 classes=$(wc --lines < $cdir)
 echo $classes
-mkdir -p $workdir/N$no-L$size-$classes
-workdir=$workdir/N$no-L$size-$classes
+mkdir -p $workdir/P$no-L$size-$classes
+workdir=$workdir/P$no-L$size-$classes
 echo $numdir
 echo $workdir
 
 cd $workdir
 
-job=`printf "$fdir/Num-N$no-L$size-$classes.sh"`
-py=`printf "$fdir/Num-N$no-L$size-$classes.py"`
+job=`printf "$fdir/Phase-N$no-L$size-$classes.sh"`
+py=`printf "$fdir/Phase-N$no-L$size-$classes.py"`
 echo $py
 
 now=$(date +"%T")
