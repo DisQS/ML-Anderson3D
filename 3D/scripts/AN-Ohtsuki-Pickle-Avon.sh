@@ -4,8 +4,9 @@ epochs=${2:-50} #No of epochs
 re=${3:-0} #Set restart point
 no=${4:-4000} #Number of smaples to take from each category
 size=${5:-30} #System size used
+categories=${6:-"15,18"} #List of categories to use separated by ,
 
-echo $getseed $epochs $re $no $size 
+echo $getseed $epochs $re $no $size $categories 
 
 
 #execute file in terminal while in the output folder
@@ -16,9 +17,8 @@ numdir=$(pwd)/ND$size
 echo $numdir
 fdir=$(pwd)/NBs
 sdir=$(pwd)/scripts
-cdir=$sdir/class.txt #Set the categories you want to use in the class.txt file
-classes=$(wc --lines < $cdir)
-echo $classes
+IFS=', ' read -r -a array <<< $categories
+classes=${#array[@]}
 mkdir -p $workdir/N$no-L$size-$classes
 workdir=$workdir/N$no-L$size-$classes
 echo $numdir
@@ -132,7 +132,7 @@ class CustomImageDataset(Dataset):
 
 print("--> defining categories")
 
-c = np.loadtxt("$cdir")
+c = np.fromtxt("$categories",dtype=float,sep=",")
 print(c)
 
 
