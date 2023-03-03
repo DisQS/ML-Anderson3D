@@ -116,16 +116,16 @@ torch.backends.cudnn.deterministic = True
 
 
 if "$getseed" != "N":
-	print("--> loading previous trial seed")
-	f = open("$workdir/lastseed.txt", "r")
-	seed = int(f.read())
-	torch.manual_seed(seed)
-	random.seed(seed)
-	f.close()
-	print("--> seed loaded")
+        print("--> loading previous trial seed")
+        f = open("$workdir/lastseed.txt", "r")
+        seed = int(f.read())
+        torch.manual_seed(seed)
+        random.seed(seed)
+        f.close()
+        print("--> seed loaded")
 else:
-	seed = torch.seed()
-	random.seed(seed)
+        seed = torch.seed()
+        random.seed(seed)
 
 f = open("$workdir/lastseed.txt", "w")
 f.write(str(seed))
@@ -142,10 +142,10 @@ if os.path.exists(f"{path}/labels"):
     shutil.rmtree(f"{path}/labels")
 os.mkdir(f"{path}/labels")
 for i in range(0,len(casez)):
-	csv_input = pd.read_csv(f'{path}/{casez[i]}/labels.csv')
-	if c[i] > 16.5:
-		csv_input.replace(to_replace=0,value=1,inplace = True)
-	csv_input.to_csv(f'{path}/labels/labels{c[i]}.csv', index=False)
+        csv_input = pd.read_csv(f'{path}/{casez[i]}/labels.csv')
+        if c[i] > 16.5:
+                csv_input.replace(to_replace=0,value=1,inplace = True)
+        csv_input.to_csv(f'{path}/labels/labels{c[i]}.csv', index=False)
 
 
 src = os.listdir(f'{path}/labels')
@@ -205,10 +205,10 @@ model = models.video.r3d_18()
 model.stem[0] = nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(3,7,7), stride=(1,2,2), padding=0, bias=False)
 model.fc = nn.Linear(in_features=512,out_features=2,bias=True)
 if $re != 0:
-	for i in range(0,$re):
-		if os.path.exists(f"$workdir/saved models/saved_model[{i+1}].pth"):
-					model.load_state_dict(torch.load(f"$workdir/saved models/saved_model[{i+1}].pth"))
-					print("Loaded model: $workdir/saved models/saved_model["+ str(i+1) + "].pth")
+        for i in range(0,$re):
+                if os.path.exists(f"$workdir/saved models/saved_model[{i+1}].pth"):
+                                        model.load_state_dict(torch.load(f"$workdir/saved models/saved_model[{i+1}].pth"))
+                                        print("Loaded model: $workdir/saved models/saved_model["+ str(i+1) + "].pth")
 if torch.cuda.is_available():
     model.cuda()
 print("--> model defined for use")
