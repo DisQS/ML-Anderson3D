@@ -117,16 +117,16 @@ torch.backends.cudnn.deterministic = True
 
 
 if "$getseed" != "N":
-	print("--> loading previous trial seed")
-	f = open("$workdir/lastseed.txt", "r")
-	seed = int(f.read())
-	torch.manual_seed(seed)
-	random.seed(seed)
-	f.close()
-	print("--> seed loaded")
+        print("--> loading previous trial seed")
+        f = open("$workdir/lastseed.txt", "r")
+        seed = int(f.read())
+        torch.manual_seed(seed)
+        random.seed(seed)
+        f.close()
+        print("--> seed loaded")
 else:
-	seed = torch.seed()
-	random.seed(seed)
+        seed = torch.seed()
+        random.seed(seed)
 
 f = open("$workdir/lastseed.txt", "w")
 f.write(str(seed))
@@ -206,10 +206,10 @@ model = models.video.r3d_18()
 model.stem[0] = nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(3,3,3), stride=(1,1,1), padding=(1,1,1), dilation=(1,1,1), bias=False)
 model.fc = nn.Linear(in_features=512,out_features=len(c),bias=True)
 if $re != 0:
-	for i in range(0,$re):
-		if os.path.exists(f"$workdir/saved models/saved_model[{i+1}].pth"):
-					model.load_state_dict(torch.load(f"$workdir/saved models/saved_model[{i+1}].pth"))
-					print("Loaded model: $workdir/saved models/saved_model["+ str(i+1) + "].pth")
+        for i in range(0,$re):
+                if os.path.exists(f"$workdir/saved models/saved_model[{i+1}].pth"):
+                                        model.load_state_dict(torch.load(f"$workdir/saved models/saved_model[{i+1}].pth"))
+                                        print("Loaded model: $workdir/saved models/saved_model["+ str(i+1) + "].pth")
 if torch.cuda.is_available():
     model.cuda()
 print("--> model defined for use")
@@ -244,9 +244,9 @@ for e in range(epochs):
         target = model(data.float())
 
         loss = loss_fn(target,labels)
-    	loss.backward()
-    	optimizer.step()
-    	train_loss += loss.item()
+        loss.backward()
+        optimizer.step()
+        train_loss += loss.item()
 
     print("--> creating training confusion matrix")
     predict = []

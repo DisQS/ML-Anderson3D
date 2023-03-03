@@ -129,16 +129,16 @@ store="N$no-L$size"
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
 if "$getseed" != "N":
-	print("--> loading previous trial seed")
-	f = open("$workdir/lastseed.txt", "r")
-	seed = int(f.read())
-	torch.manual_seed(seed)
-	random.seed(seed)
-	f.close()
-	print("--> seed loaded")
+        print("--> loading previous trial seed")
+        f = open("$workdir/lastseed.txt", "r")
+        seed = int(f.read())
+        torch.manual_seed(seed)
+        random.seed(seed)
+        f.close()
+        print("--> seed loaded")
 else:
-	seed = torch.seed()
-	random.seed(seed)
+        seed = torch.seed()
+        random.seed(seed)
 f = open("$workdir/lastseed.txt", "w")
 f.write(str(seed))
 print("current seed: " + str(seed))
@@ -194,10 +194,10 @@ print(f"Using {device} device")
 print("--> preparing model")
 model = NeuralNetwork().to(device)
 if $re != 0:
-	for i in range(0,$re):
-		if os.path.exists(f"$workdir/saved models/saved_model[{i+1}].pth"):
-					model.load_state_dict(torch.load(f"$workdir/saved models/saved_model[{i+1}].pth"))
-					print("Loaded model: $workdir/saved models/saved_model["+ str(i+1) + "].pth")
+        for i in range(0,$re):
+                if os.path.exists(f"$workdir/saved models/saved_model[{i+1}].pth"):
+                                        model.load_state_dict(torch.load(f"$workdir/saved models/saved_model[{i+1}].pth"))
+                                        print("Loaded model: $workdir/saved models/saved_model["+ str(i+1) + "].pth")
 if torch.cuda.is_available():
     model.cuda()
 print("--> model defined for use")
