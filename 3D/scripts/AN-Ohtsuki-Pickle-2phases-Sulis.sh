@@ -125,7 +125,7 @@ class CustomImageDataset(Dataset):
         return image, label
 
 print("--> defining categories")
-c = np.fromtxt("$categories",dtype=float,sep=",")
+c = np.fromstring("$categories",dtype=float,sep=",")
 print(c)
 casez = []
 for i in range (0, len(c)):
