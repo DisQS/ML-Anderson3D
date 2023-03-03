@@ -240,7 +240,7 @@ if $re != 0:
        for i in range(0,$re):
                if os.path.exists(f"$workdir/saved models/saved_model[{i+1}].pth"):
                         model.load_state_dict(torch.load(f"$workdir/saved models/saved_model[{i+1}].pth"))
-                                 print("Loaded model: $workdir/saved models/saved_model["+ str(i+1) + "].pth")
+                        print("Loaded model: $workdir/saved models/saved_model["+ str(i+1) + "].pth")
 if torch.cuda.is_available():
     model.cuda()
 print("--> model defined for use")
