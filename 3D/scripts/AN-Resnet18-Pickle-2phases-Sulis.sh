@@ -234,6 +234,8 @@ print("--> beginning training")
 for e in range(epochs):
     st = time.time()
     train_loss = 0.0
+    predict = []
+    p = []
     model.train()     # Optional when not using Model Specific layer
     for data, labels in train_dataloader:
         if torch.cuda.is_available():
@@ -241,23 +243,78 @@ for e in range(epochs):
         
         optimizer.zero_grad()
         target = model(data.float())
+        t = torch.Tensor.cpu(target)
+        l = torch.Tensor.cpu(labels)
+        pred = np.argmax(t.detach().numpy(), axis=-1)
+        predict = np.append(predict, pred)
+        p = np.append(p, l.detach().numpy())
+
         loss = loss_fn(target,labels)
         loss.backward()
         optimizer.step()
-        train_loss += loss.item()
+        train_loss += loss.item() * data.size(0)
+
+
+    np.savetxt(f"$workdir/cm-target-C{len(c)}-D$size-{e+$re}.csv", t.detach().numpy(), delimiter=",")
+    np.savetxt(f"$workdir/cm-tlabels-C{len(c)}-D$size-{e+$re}.csv", l.detach().numpy(), delimiter=",")
+    print("--> computing confusion matrix")
+    cm = confusion_matrix(p, predict)
+    print(cm)
+    print("--> saving confusion matrix")
+    np.savetxt(f"$workdir/cm-train-C{len(c)}-D$size-{e+$re}.csv", cm, delimiter=",")
     
     valid_loss = 0.0
+    vpredict = []
+    vp = []
     model.eval()     # Optional when not using Model Specific layer
-    for data, labels in validation_dataloader:
+    for vdata, vlabels in validation_dataloader:
         if torch.cuda.is_available():
-            data, labels = data.cuda(), labels.cuda()
-        
-        target = model(data.float())
-        loss = loss_fn(target,labels)
-        valid_loss = loss.item() * data.size(0)
+            vdata, vlabels = vdata.cuda(), vlabels.cuda()
 
+        
+        vtarget = model(vdata.float())
+        
+        vt = torch.Tensor.cpu(vtarget)
+        vl = torch.Tensor.cpu(vlabels)
+        vpred = np.argmax(vt.detach().numpy(), axis=-1)
+        vpredict = np.append(vpredict, vpred)
+        vp = np.append(vp, vl.detach().numpy())
+     
+        vloss = loss_fn(vtarget,vlabels)
+        valid_loss = vloss.item() * data.size(0)
+
+    np.savetxt(f"$workdir/cm-vtarget-C{len(c)}-D$size-{e+$re}.csv", vt.detach().numpy(), delimiter=",")
+    np.savetxt(f"$workdir/cm-vlabels-C{len(c)}-D$size-{e+$re}.csv", vl.detach().numpy(), delimiter=",")
+    print("--> computing confusion matrix")
+    vcm = confusion_matrix(vp, vpredict)
+    print(vcm)
+    print("--> saving confusion matrix")
+    np.savetxt(f"$workdir/cm-valid-C{len(c)}-D$size-{e+$re}.csv", vcm, delimiter=",")
     et = time.time()
     rt = et-st
+
+    print("--> testing model against test data (to see model accuracy)")
+    tpredict = []
+    tp = []
+    model.eval()
+    for i in range(0,int(ndata*0.05*len(c))):
+        x, y = test_data[i][0], test_data[i][1]
+        x = x.reshape(1,1,$size,$size,$size)
+        x = torch.from_numpy(x)
+        x = x.float()
+        with torch.no_grad():
+            tpred = model (x.cuda()) if torch.cuda.is_available() else model(x)
+            tpredicted, tactual = tpred[0].argmax(0), y 
+            tpredicted = torch.Tensor.cpu(tpredicted)
+            tpredict = np.append(tpredict, tpredicted)
+            tp = np.append(tp, tactual)
+
+
+    print("--> computing confusion matrix")
+    tcm = confusion_matrix(tp, tpredict)
+    print(tcm)
+    print("--> saving confusion matrix")
+    np.savetxt(f"$workdir/cm-test-C{len(c)}-D$size-{e+$re}.csv", tcm, delimiter=",")
 
     print(f'Epoch {e+1+$re} \t Runtime: {round(rt,2)}s \t Training Loss: {train_loss / len(train_dataloader)} \t Validation Loss: {valid_loss / len(validation_dataloader)}')
     # if min_valid_loss > valid_loss:
@@ -281,76 +338,6 @@ for e in range(epochs):
     print(f"--> stored validation loss values: {vl}")
     f.close()
 
-    print("--> testing model against test data (to see model accuracy)")
-    predict = []
-    p = []
-    model.eval()
-    for i in range(0,int(ndata*0.05*len(c))):
-        x, y = test_data[i][0], test_data[i][1]
-        x = x.reshape(1,1,$size,$size,$size)
-        x = torch.from_numpy(x)
-        x = x.float()
-        with torch.no_grad():
-            pred = model (x.cuda()) if torch.cuda.is_available() else model(x)
-            predicted, actual = pred[0].argmax(0), y 
-            predicted = torch.Tensor.cpu(predicted)
-            predict = np.append(predict, predicted)
-            p = np.append(p, actual)
-
-
-    print("--> computing confusion matrix")
-    cm = confusion_matrix(p, predict)
-    print(cm)
-    print("--> saving confusion matrix")
-    np.savetxt(f"$workdir/cm-C{len(c)}-D$size-{e+$re}.csv", cm, delimiter=",")
-
-
-if not os.path.exists(f"$workdir/CSVs"):
-    os.makedirs(f"$workdir/CSVs")
-
-
-x = np.arange(0,epochs,1)
-plt.plot(x+1, tl, "b+", label="Training loss")
-
-print("--> storing training loss values")
-np.savetxt(f"$workdir/CSVs/tl-C{len(c)}-D$size-{datetime.now()}.csv", tl, delimiter=",")
-
-plt.plot(x+1, vl, "ro", label="Validation loss")
-
-print("--> storing validation loss values")
-np.savetxt(f"$workdir/CSVs/vl-C{len(c)}-D$size-{datetime.now()}.csv", vl, delimiter=",")
-
-plt.title("Training and validation loss")
-plt.xlabel("epochs")
-plt.legend()
-plt.show()
-
-
-
-print("--> testing model against test data (to see model accuracy)")
-predict = []
-p = []
-model.eval()
-for i in range(0,int(ndata*0.05*len(c))):
-    x, y = test_data[i][0], test_data[i][1]
-    x = x.reshape(1,1,$size,$size,$size)
-    x = torch.from_numpy(x)
-    x = x.float()
-    with torch.no_grad():
-        pred = model (x.cuda()) if torch.cuda.is_available() else model(x)
-        predicted, actual = pred[0].argmax(0), y 
-        predicted = torch.Tensor.cpu(predicted)
-        predict = np.append(predict, predicted)
-        p = np.append(p, actual)
-print("--> test complete")
-
-print("--> computing confusion matrix")
-cm = confusion_matrix(p, predict)
-print(cm)
-print("--> saving confusion matrix")
-np.savetxt(f"$workdir/CSVs/cm-C{len(c)}-D$size-{datetime.now()}.csv", cm, delimiter=",")
-score = round(accuracy_score(p, predict)*100,2)
-print(f"Model Accuracy: {score}%")
 
 print("--> task complete")
 EOD
