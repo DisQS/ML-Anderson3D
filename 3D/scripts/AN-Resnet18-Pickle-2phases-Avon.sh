@@ -208,8 +208,8 @@ for e in range(epochs):
         train_loss += loss.item() * data.size(0)
 
 
-    np.savetxt(f"$workdir/cm-target-C{len(c)}-D$size-{e+$re}.csv", t.detach().numpy(), delimiter=",")
-    np.savetxt(f"$workdir/cm-tlabels-C{len(c)}-D$size-{e+$re}.csv", l.detach().numpy(), delimiter=",")
+    #np.savetxt(f"$workdir/cm-target-C{len(c)}-D$size-{e+$re}.csv", t.detach().numpy(), delimiter=",")
+    #np.savetxt(f"$workdir/cm-tlabels-C{len(c)}-D$size-{e+$re}.csv", l.detach().numpy(), delimiter=",")
     print("--> computing confusion matrix")
     cm = confusion_matrix(p, predict)
     print(cm)
@@ -236,8 +236,8 @@ for e in range(epochs):
         vloss = loss_fn(vtarget,vlabels)
         valid_loss = vloss.item() * data.size(0)
 
-    np.savetxt(f"$workdir/cm-vtarget-C{len(c)}-D$size-{e+$re}.csv", vt.detach().numpy(), delimiter=",")
-    np.savetxt(f"$workdir/cm-vlabels-C{len(c)}-D$size-{e+$re}.csv", vl.detach().numpy(), delimiter=",")
+    #np.savetxt(f"$workdir/cm-vtarget-C{len(c)}-D$size-{e+$re}.csv", vt.detach().numpy(), delimiter=",")
+    #np.savetxt(f"$workdir/cm-vlabels-C{len(c)}-D$size-{e+$re}.csv", vl.detach().numpy(), delimiter=",")
     print("--> computing confusion matrix")
     vcm = confusion_matrix(vp, vpredict)
     print(vcm)
