@@ -55,6 +55,7 @@ from datetime import datetime
 
 
 import numpy as np
+import math
 import pickle
 import time
 import random
@@ -75,31 +76,31 @@ print("--> import complete")
 print(datetime.now())
 print("$getseed $epochs $re $no $size")
 
+f1 = math.floor(($size-4)/2)
+f2 = math.floor((f1-2)/2)
+fl = math.floor((f2-2)/2)
+
 class NeuralNetwork(nn.Module):
     def __init__(self):
       super(NeuralNetwork, self).__init__()
       self.stack = nn.Sequential(
       nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(5,5,5), stride=1),
-      nn.ReLU(),
       nn.Conv3d(in_channels=64, out_channels=64, kernel_size=(5,5,5), stride=1, padding=2),
       nn.ReLU(),
       nn.MaxPool3d(kernel_size=(2,2,2), stride=2),
       nn.Dropout3d(),
       nn.Conv3d(in_channels=64, out_channels=96, kernel_size=(3,3,3), stride=1),
-      nn.ReLU(),
       nn.Conv3d(in_channels=96, out_channels=96, kernel_size=(3,3,3), stride=1, padding=1),
       nn.ReLU(),
       nn.MaxPool3d(kernel_size=(2,2,2), stride=2),
       nn.Dropout3d(),
       nn.Conv3d(in_channels=96, out_channels=128, kernel_size=(3,3,3), stride=1),
-      nn.ReLU(),
       nn.Conv3d(in_channels=128, out_channels=128, kernel_size=(3,3,3), stride=1, padding=1),
       nn.ReLU(),
       nn.MaxPool3d(kernel_size=(2,2,2), stride=2),
       nn.Dropout3d(),
-      nn.AdaptiveAvgPool3d(output_size=(1, 1, 1)),
       nn.Flatten(),
-      nn.Linear(in_features=128,out_features=1024),
+      nn.Linear(in_features=128*(fl**3),out_features=1024),
       nn.Dropout(),
       nn.Linear(in_features=1024,out_features=len(c))
       )
@@ -248,7 +249,7 @@ print(model)
 
 ################################
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0117395, eps=4.5765e-08, weight_decay=0.000138954)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 print(f"optimizer used: {optimizer}")
 
 
