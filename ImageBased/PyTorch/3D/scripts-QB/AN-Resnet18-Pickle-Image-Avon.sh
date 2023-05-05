@@ -13,21 +13,23 @@ echo $getseed $epochs $re $no $size $categories
 workdir=$(pwd)
 
 cd ../
-numdir=$(pwd)/ND$size
+strdir=$(pwd)
+cd ../../
+numdir=$(pwd)/I1000D$size
 echo $numdir
-fdir=$(pwd)/NBs
-sdir=$(pwd)/scripts
+fdir=$strdir/NBs
+sdir=$strdir/scripts
 IFS=', ' read -r -a array <<< $categories
 classes=${#array[@]}
-mkdir -p $workdir/P$no-L$size-$classes
-workdir=$workdir/P$no-L$size-$classes
+mkdir -p $workdir/I$no-L$size-$classes
+workdir=$workdir/I$no-L$size-$classes
 echo $numdir
 echo $workdir
 
 cd $workdir
 
-job=`printf "$fdir/Phase-N$no-L$size-$classes.sh"`
-py=`printf "$fdir/Phase-N$no-L$size-$classes.py"`
+job=`printf "$fdir/Img-N$no-L$size-$classes.sh"`
+py=`printf "$fdir/Img-N$no-L$size-$classes.py"`
 echo $py
 
 now=$(date +"%T")
@@ -49,23 +51,33 @@ from torch import nn
 from torch.utils.data import DataLoader, Dataset, ConcatDataset
 from torch.utils.data import random_split
 from torchvision import models
+
 from datetime import datetime
 import numpy as np
+import pickle
 import time
 import random
+
 import matplotlib
 import matplotlib.pyplot as plt
 print("--> matplotlib version used = 3.3.3, version loaded = " + str(matplotlib.__version__))
+
 import sklearn
 from sklearn.datasets import make_classification
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
+
+import PIL
+from PIL import Image
+print("--> Pillow version used = 8.0.1, version loaded = " + str(PIL.__version__))
+
 print("--> sklearn version used = 0.23.2, version loaded = " + str(sklearn.__version__))
 print("--> import complete")
 print(datetime.now())
 print("$getseed $epochs $re $no $size")
+
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, img_dir, transform=None, target_transform=None):
         self.img_labels = pd.read_csv(annotations_file, nrows=$no)
@@ -76,9 +88,9 @@ class CustomImageDataset(Dataset):
         return len(self.img_labels)
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
-        image = np.load(img_path, allow_pickle=True)
-        image = np.square(image)
-        image = image.reshape(1,$size,$size,$size)
+        image = Image.open(img_path)
+        image = np.asarray(image)
+        image = np.moveaxis(image, -1, 0)
         label = self.img_labels.iloc[idx, 1]
         if self.transform:
             image = self.transform(image)
@@ -119,20 +131,21 @@ if os.path.exists(f"{path}/labels"):
     shutil.rmtree(f"{path}/labels")
 os.mkdir(f"{path}/labels")
 for i in range(0,len(casez)):
-        csv_input = pd.read_csv(f'{path}/{casez[i]}/labels.csv')
-        if c[i] > 16.5:
-                csv_input.replace(to_replace=0,value=1,inplace = True)
-        csv_input.to_csv(f'{path}/labels/labels{c[i]}.csv', index=False)
+    csv_input = pd.read_csv(f'{path}/{casez[i]}/labels.csv')
+    csv_input.replace(to_replace=0,value=i,inplace = True)
+    csv_input.to_csv(f'{path}/labels/labels{c[i]}.csv', index=False)
 src = os.listdir(f'{path}/labels')
 a = pd.concat([pd.read_csv(f'{path}/labels/{file}') for file in src ], ignore_index=True)
 a.to_csv(f'{path}/labels/labels.csv', index=False)
 print("--> created labels file")
+###################################
 print("--> creating datasets for usage for training, validation and testing")
 batch_size = 32
 ndata = $no
 for i in range(0,len(casez)):
     if i == 0:
         data = CustomImageDataset(annotations_file=f"{path}/labels/labels{c[i]}.csv",img_dir=f"{path}/{casez[i]}")
+        print(len(data))
         training_data, validation_data, test_data = random_split(data,[int(ndata*0.8),int(ndata*0.15),int(ndata*0.05)])
     else:
         data = CustomImageDataset(annotations_file=f"{path}/labels/labels{c[i]}.csv",img_dir=f"{path}/{casez[i]}")
@@ -159,9 +172,8 @@ print(f"Label: {label}")
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
 print("--> preparing model from resnet18 network")
-model = models.video.r3d_18()
-model.stem[0] = nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(3,7,7), stride=(1,2,2), padding=0, bias=False)
-model.fc = nn.Linear(in_features=512,out_features=2,bias=True)
+model = models.resnet18()
+model.fc = nn.Linear(in_features=512,out_features=len(c),bias=True)
 if $re != 0:
         for i in range(0,$re):
                 if os.path.exists(f"$workdir/saved models/saved_model[{i+1}].pth"):
@@ -171,16 +183,17 @@ if torch.cuda.is_available():
     model.cuda()
 print("--> model defined for use")
 print(model)
+################################
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.013299 , momentum = 0.599124)
+optimizer = torch.optim.Adam(model.parameters())
 print(f"optimizer used: {optimizer}")
 epochs = $epochs - $re
-if os.path.exists(f"$workdir/saved models"):
-    shutil.rmtree(f"$workdir/saved models")
-os.mkdir(f"$workdir/saved models")
+if $re == 0:
+    if os.path.exists(f"$workdir/saved models"):
+        shutil.rmtree(f"$workdir/saved models")
+    os.mkdir(f"$workdir/saved models")
 torch.save(model.state_dict(), f"$workdir/saved models/saved_model[{$re}].pth")
 min_valid_loss = np.inf
-start = time.time()
 tl = np.array([])
 vl = np.array([])
 print("--> beginning training")
@@ -252,7 +265,7 @@ for e in range(epochs):
     model.eval()
     for i in range(0,int(ndata*0.05*len(c))):
         x, y = test_data[i][0], test_data[i][1]
-        x = x.reshape(1,1,$size,$size,$size)
+        x = x.reshape(1,1,100,100)
         x = torch.from_numpy(x)
         x = x.float()
         with torch.no_grad():
@@ -298,14 +311,13 @@ EOD
 
 cat > ${job} << EOD
 #!/bin/bash
-
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem-per-cpu=3700
-#SBATCH --time=48:00:00
-#SBATCH --partition=gpu
+#SBATCH --cpus-per-task=42
+#SBATCH --mem-per-cpu=3850
 #SBATCH --gres=gpu:quadro_rtx_6000:1
+#SBATCH --partition=gpu
+#SBATCH --time=48:00:00
 
 module purge
 
@@ -321,10 +333,7 @@ module purge
 module restore PT
 module list
 
-
 srun $py
-
-
 EOD
 
 chmod 755 ${job}

@@ -13,10 +13,12 @@ echo $getseed $epochs $re $no $size $categories
 workdir=$(pwd)
 
 cd ../
+strdir=$(pwd)
+cd ../../
 numdir=$(pwd)/ND$size
 echo $numdir
-fdir=$(pwd)/NBs
-sdir=$(pwd)/scripts
+fdir=$strdir/NBs
+sdir=$strdir/scripts
 IFS=', ' read -r -a array <<< $categories
 classes=${#array[@]}
 mkdir -p $workdir/P$no-L$size-$classes
