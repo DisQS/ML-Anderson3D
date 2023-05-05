@@ -160,7 +160,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
 print("--> preparing model from resnet18 network")
 model = models.video.r3d_18()
-model.stem[0] = nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(3,7,7), stride=(1,2,2), padding=0, bias=False)
+model.stem[0] = nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(3,3,3), stride=(1,1,1), padding=(1,1,1), dilation=(1,1,1), bias=False)
 model.fc = nn.Linear(in_features=512,out_features=2,bias=True)
 if $re != 0:
         for i in range(0,$re):
@@ -172,7 +172,7 @@ if torch.cuda.is_available():
 print("--> model defined for use")
 print(model)
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.013299 , momentum = 0.599124)
+optimizer = torch.optim.Adam(model.parameters())
 print(f"optimizer used: {optimizer}")
 epochs = $epochs - $re
 if os.path.exists(f"$workdir/saved models"):
@@ -205,7 +205,7 @@ for e in range(epochs):
         loss = loss_fn(target,labels)
         loss.backward()
         optimizer.step()
-        train_loss += loss.item() * data.size(0)
+        train_loss += loss.item()
 
 
     #np.savetxt(f"$workdir/cm-target-C{len(c)}-D$size-{e+$re}.csv", t.detach().numpy(), delimiter=",")
@@ -270,13 +270,13 @@ for e in range(epochs):
     np.savetxt(f"$workdir/cm-test-C{len(c)}-D$size-{e+$re}.csv", tcm, delimiter=",")
 
     print(f'Epoch {e+1+$re} \t Runtime: {round(rt,2)}s \t Training Loss: {train_loss / len(train_dataloader)} \t Validation Loss: {valid_loss / len(validation_dataloader)}')
-    # if min_valid_loss > valid_loss:
-        # print(f'Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
-        ##min_valid_loss = valid_loss
-        # Saving State Dict
-    torch.save(model.state_dict(), f"$workdir/saved models/saved_model[{e+1+$re}].pth")
-    # else:
-        # print(" ")
+    if min_valid_loss > valid_loss:
+        print(f'Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
+        min_valid_loss = valid_loss
+        #Saving State Dict
+        torch.save(model.state_dict(), f"$workdir/saved models/saved_model[{e+1+$re}].pth")
+    else:
+        print(" ")
     
     tl = train_loss / len(train_dataloader)
     vl = valid_loss / len(validation_dataloader)

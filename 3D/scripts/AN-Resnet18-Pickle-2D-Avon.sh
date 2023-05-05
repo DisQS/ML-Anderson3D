@@ -92,7 +92,7 @@ class CustomImageDataset(Dataset):
         image = np.square(image)
         image = image.reshape($size,$size,$size)
         s = math.floor(math.sqrt($size))
-        image=image[0:s**2,0:30,0:30]
+        image=image[0:s**2,0:$size,0:$size]
         a = image[0]
 
         for i in range(1,s**2):
@@ -110,6 +110,13 @@ class CustomImageDataset(Dataset):
         if self.target_transform:
             label = self.target_transform(label)
         return c, label
+
+class Identity(torch.nn.Module):
+    def __init__(self):
+        super(Identity, self).__init__()
+
+    def forward(self, x):
+        return x
 
 print("--> defining categories")
 
@@ -219,6 +226,11 @@ print("--> preparing model from resnet18 network")
 model = models.resnet18()
 model.conv1 = nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(7,7), stride=(2,2), padding=(3,3), bias=False)
 model.fc = nn.Linear(in_features=512,out_features=len(c),bias=True)
+layers = [model.layer1,model.layer2,model.layer3,model.layer4]
+for i in range(0,4):
+    model_layer = layers[i]
+    model_layer[0].add_module("drop",nn.Dropout2d())
+    model_layer[1].add_module("drop",nn.Dropout2d())
 if $re != 0:
         for i in range(0,$re):
                 if os.path.exists(f"$workdir/saved models/saved_model[{i+1}].pth"):
@@ -270,8 +282,6 @@ for e in range(epochs):
         train_loss += loss.item()
 
 
-    #np.savetxt(f"$workdir/cm-target-C{len(c)}-D$size-{e+$re}.csv", t.detach().numpy(), delimiter=",")
-    #np.savetxt(f"$workdir/cm-tlabels-C{len(c)}-D$size-{e+$re}.csv", l.detach().numpy(), delimiter=",")
     print("--> computing confusion matrix")
     cm = confusion_matrix(p, predict)
     print(cm)
@@ -282,24 +292,23 @@ for e in range(epochs):
     vpredict = []
     vp = []
     model.eval()     # Optional when not using Model Specific layer
-    for vdata, vlabels in validation_dataloader:
-        if torch.cuda.is_available():
-            vdata, vlabels = vdata.cuda(), vlabels.cuda()
+    with torch.no_grad():
+        for vdata, vlabels in validation_dataloader:
+            if torch.cuda.is_available():
+                vdata, vlabels = vdata.cuda(), vlabels.cuda()
 
         
-        vtarget = model(vdata.float())
+            vtarget = model(vdata.float())
         
-        vt = torch.Tensor.cpu(vtarget)
-        vl = torch.Tensor.cpu(vlabels)
-        vpred = np.argmax(vt.detach().numpy(), axis=-1)
-        vpredict = np.append(vpredict, vpred)
-        vp = np.append(vp, vl.detach().numpy())
+            vt = torch.Tensor.cpu(vtarget)
+            vl = torch.Tensor.cpu(vlabels)
+            vpred = np.argmax(vt.detach().numpy(), axis=-1)
+            vpredict = np.append(vpredict, vpred)
+            vp = np.append(vp, vl.detach().numpy())
      
-        vloss = loss_fn(vtarget,vlabels)
-        valid_loss = vloss.item() * data.size(0)
+            vloss = loss_fn(vtarget,vlabels)
+            valid_loss = vloss.item() * data.size(0)
 
-    #np.savetxt(f"$workdir/cm-vtarget-C{len(c)}-D$size-{e+$re}.csv", vt.detach().numpy(), delimiter=",")
-    #np.savetxt(f"$workdir/cm-vlabels-C{len(c)}-D$size-{e+$re}.csv", vl.detach().numpy(), delimiter=",")
     print("--> computing confusion matrix")
     vcm = confusion_matrix(vp, vpredict)
     print(vcm)
@@ -333,13 +342,13 @@ for e in range(epochs):
     np.savetxt(f"$workdir/cm-test-C{len(c)}-D$size-{e+$re}.csv", tcm, delimiter=",")
 
     print(f'Epoch {e+1+$re} \t Runtime: {round(rt,2)}s \t Training Loss: {train_loss / len(train_dataloader)} \t Validation Loss: {valid_loss / len(validation_dataloader)}')
-    # if min_valid_loss > valid_loss:
-        # print(f'Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
-        ##min_valid_loss = valid_loss
-        # Saving State Dict
-    torch.save(model.state_dict(), f"$workdir/saved models/saved_model[{e+1+$re}].pth")
-    # else:
-        # print(" ")
+    if min_valid_loss > valid_loss:
+        print(f'Validation Loss Decreased({min_valid_loss:.6f}--->{valid_loss:.6f}) \t Saving The Model')
+        min_valid_loss = valid_loss
+        #Saving State Dict
+        torch.save(model.state_dict(), f"$workdir/saved models/saved_model[{e+1+$re}].pth")
+    else:
+        print(" ")
     
     tl = train_loss / len(train_dataloader)
     vl = valid_loss / len(validation_dataloader)
