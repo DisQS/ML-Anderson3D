@@ -13,14 +13,16 @@ echo $getseed $epochs $re $no $size $categories
 workdir=$(pwd)
 
 cd ../
+strdir=$(pwd)
+cd ../../
 numdir=$(pwd)/ND$size
 echo $numdir
-fdir=$(pwd)/NBs
-sdir=$(pwd)/scripts
+fdir=$strdir/NBs
+sdir=$strdir/scripts
 IFS=', ' read -r -a array <<< $categories
 classes=${#array[@]}
-mkdir -p $workdir/N$no-L$size-$classes
-workdir=$workdir/N$no-L$size-$classes
+mkdir -p $workdir/P$no-L$size-$classes
+workdir=$workdir/P$no-L$size-$classes
 echo $numdir
 echo $workdir
 
@@ -253,7 +255,7 @@ for e in range(epochs):
         loss = loss_fn(target,labels)
         loss.backward()
         optimizer.step()
-        train_loss += loss.item() * data.size(0)
+        train_loss += loss.item()
 
 
     #np.savetxt(f"$workdir/cm-target-C{len(c)}-D$size-{e+$re}.csv", t.detach().numpy(), delimiter=",")

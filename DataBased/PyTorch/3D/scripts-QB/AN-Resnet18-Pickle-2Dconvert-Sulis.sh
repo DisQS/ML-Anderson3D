@@ -13,21 +13,23 @@ echo $getseed $epochs $re $no $size $categories
 workdir=$(pwd)
 
 cd ../
+strdir=$(pwd)
+cd ../../
 numdir=$(pwd)/ND$size
 echo $numdir
-fdir=$(pwd)/NBs
-sdir=$(pwd)/scripts
+fdir=$strdir/NBs
+sdir=$strdir/scripts
 IFS=', ' read -r -a array <<< $categories
 classes=${#array[@]}
-mkdir -p $workdir/N$no-L$size-$classes
-workdir=$workdir/N$no-L$size-$classes
+mkdir -p $workdir/P$no-L$size-$classes
+workdir=$workdir/P$no-L$size-$classes
 echo $numdir
 echo $workdir
 
 cd $workdir
 
-job=`printf "$fdir/Num-N$no-L$size-$classes.sh"`
-py=`printf "$fdir/Num-N$no-L$size-$classes.py"`
+job=`printf "$fdir/2D-N$no-L$size-$classes.sh"`
+py=`printf "$fdir/2D-N$no-L$size-$classes.py"`
 echo $py
 
 now=$(date +"%T")
@@ -40,20 +42,26 @@ echo "Current time : $now"
 cat > ${py} << EOD
 #!/usr/bin/env python
 # coding: utf-8
+
 print("--> importing modules")
 import os, shutil, pathlib
 import torch
 print("--> torch version used = 1.9.0, version loaded = " + str(torch.__version__))
 import pandas as pd
+
 from torch import nn
 from torch.utils.data import DataLoader, Dataset, ConcatDataset
 from torch.utils.data import random_split
 from torchvision import models
 from datetime import datetime
+
+
 import numpy as np
 import pickle
 import time
 import random
+import math
+
 import matplotlib
 import matplotlib.pyplot as plt
 print("--> matplotlib version used = 3.3.3, version loaded = " + str(matplotlib.__version__))
@@ -64,70 +72,66 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 print("--> sklearn version used = 0.23.2, version loaded = " + str(sklearn.__version__))
+
 print("--> import complete")
+
 print(datetime.now())
 print("$getseed $epochs $re $no $size")
-class NeuralNetwork(nn.Module):
-    def __init__(self):
-      super(NeuralNetwork, self).__init__()
-      self.stack = nn.Sequential(
-      nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(5,5,5), stride=1),
-      nn.ReLU(),
-      nn.Conv3d(in_channels=64, out_channels=64, kernel_size=(5,5,5), stride=1, padding=2),
-      nn.ReLU(),
-      nn.MaxPool3d(kernel_size=(2,2,2), stride=2),
-      nn.Dropout3d(),
-      nn.Conv3d(in_channels=64, out_channels=96, kernel_size=(3,3,3), stride=1),
-      nn.ReLU(),
-      nn.Conv3d(in_channels=96, out_channels=96, kernel_size=(3,3,3), stride=1, padding=1),
-      nn.ReLU(),
-      nn.MaxPool3d(kernel_size=(2,2,2), stride=2),
-      nn.Dropout3d(),
-      nn.Conv3d(in_channels=96, out_channels=128, kernel_size=(3,3,3), stride=1),
-      nn.ReLU(),
-      nn.Conv3d(in_channels=128, out_channels=128, kernel_size=(3,3,3), stride=1, padding=1),
-      nn.ReLU(),
-      nn.MaxPool3d(kernel_size=(2,2,2), stride=2),
-      nn.Dropout3d(),
-      nn.AdaptiveAvgPool3d(output_size=(1, 1, 1)),
-      nn.Flatten(),
-      nn.Linear(in_features=128,out_features=1024),
-      nn.Dropout(),
-      nn.Linear(in_features=1024,out_features=len(c))
-      )
-    def forward(self, x):
-        logits = self.stack(x)
-        return logits
+
 class CustomImageDataset(Dataset):
     def __init__(self, annotations_file, img_dir, transform=None, target_transform=None):
         self.img_labels = pd.read_csv(annotations_file, nrows=$no)
         self.img_dir = img_dir
         self.transform = transform
         self.target_transform = target_transform
+
     def __len__(self):
         return len(self.img_labels)
+
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
         image = np.load(img_path, allow_pickle=True)
         image = np.square(image)
-        image = image.reshape(1,$size,$size,$size)
+        image = image.reshape($size,$size,$size)
+        s = math.floor(math.sqrt($size))
+        image=image[0:s**2,0:30,0:30]
+        a = image[0]
+
+        for i in range(1,s**2):
+            b = image[i]
+            a = np.concatenate((a, b), axis=1)
+        a = np.hsplit(a,s)
+        c = a[0]
+        for i in range(1,s):
+            b = a[i]
+            c = np.concatenate((c, b), axis=0)
+        c = c.reshape(1,s*$size,s*$size)
         label = self.img_labels.iloc[idx, 1]
         if self.transform:
-            image = self.transform(image)
+            c = self.transform(c)
         if self.target_transform:
             label = self.target_transform(label)
-        return image, label
+        return c, label
+
 print("--> defining categories")
+
 c = np.fromstring("$categories",dtype=float,sep=",")
 print(c)
+
+
 casez = []
 for i in range (0, len(c)):
     casez = np.append(casez, "W"+str(c[i]))
 print(casez)
+
 print("--> categories have been defined. No. of categories used = " + str(len(c)))
+
 store="N$no-L$size"
+
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
+
+
 if "$getseed" != "N":
         print("--> loading previous trial seed")
         f = open("$workdir/lastseed.txt", "r")
@@ -139,13 +143,17 @@ if "$getseed" != "N":
 else:
         seed = torch.seed()
         random.seed(seed)
+
 f = open("$workdir/lastseed.txt", "w")
 f.write(str(seed))
 print("current seed: " + str(seed))
 f.close()
+
 print("--> seed saved to lastseed.txt in $workdir")
+
 path = pathlib.Path("$numdir")
 os.chdir(path)
+
 print("--> creating labels file to identify files to be used")
 if os.path.exists(f"{path}/labels"):
     shutil.rmtree(f"{path}/labels")
@@ -154,10 +162,16 @@ for i in range(0,len(casez)):
     csv_input = pd.read_csv(f'{path}/{casez[i]}/labels.csv')
     csv_input.replace(to_replace=0,value=i,inplace = True)
     csv_input.to_csv(f'{path}/labels/labels{c[i]}.csv', index=False)
+
+
 src = os.listdir(f'{path}/labels')
 a = pd.concat([pd.read_csv(f'{path}/labels/{file}') for file in src ], ignore_index=True)
 a.to_csv(f'{path}/labels/labels.csv', index=False)
+
 print("--> created labels file")
+
+
+
 ###################################
 print("--> creating datasets for usage for training, validation and testing")
 batch_size = 32
@@ -178,21 +192,35 @@ print("--> created datasets")
 print("--> training set contains " + str(len(training_data)) + " files")
 print("--> validation set contains " + str(len(validation_data)) + " files")
 print("--> test set contains " + str(len(test_data)) + " files")
+
+
+
 # Create data loaders.
+
 train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 validation_dataloader = DataLoader(validation_data, batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
+
+
+
+
 train_features, train_labels = next(iter(train_dataloader))
 print(f"Feature batch shape: {train_features.size()}")
 print(f"Labels batch shape: {train_labels.size()}")
 img = train_features[0].squeeze()
 label = train_labels
 print(f"Label: {label}")
+
+
+
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
-print("--> preparing model")
-model = NeuralNetwork().to(device)
+
+print("--> preparing model from resnet18 network")
+model = models.resnet18()
+model.conv1 = nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(7,7), stride=(2,2), padding=(3,3), bias=False)
+model.fc = nn.Linear(in_features=512,out_features=len(c),bias=True)
 if $re != 0:
         for i in range(0,$re):
                 if os.path.exists(f"$workdir/saved models/saved_model[{i+1}].pth"):
@@ -202,10 +230,13 @@ if torch.cuda.is_available():
     model.cuda()
 print("--> model defined for use")
 print(model)
+
 ################################
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0117395, eps=4.5765e-08, weight_decay=0.000138954)
+optimizer = torch.optim.Adam(model.parameters())
 print(f"optimizer used: {optimizer}")
+
+
 epochs = $epochs - $re
 if $re == 0:
     if os.path.exists(f"$workdir/saved models"):
@@ -215,6 +246,7 @@ torch.save(model.state_dict(), f"$workdir/saved models/saved_model[{$re}].pth")
 min_valid_loss = np.inf
 tl = np.array([])
 vl = np.array([])
+
 print("--> beginning training")
 for e in range(epochs):
     st = time.time()
@@ -282,9 +314,10 @@ for e in range(epochs):
     tpredict = []
     tp = []
     model.eval()
+    s = math.floor(math.sqrt($size))
     for i in range(0,int(ndata*0.05*len(c))):
         x, y = test_data[i][0], test_data[i][1]
-        x = x.reshape(1,1,$size,$size,$size)
+        x = x.reshape(1,1,s*$size,s*$size)
         x = torch.from_numpy(x)
         x = x.float()
         with torch.no_grad():
@@ -324,12 +357,14 @@ for e in range(epochs):
     f.close()
 
 
+
 print("--> task complete")
 EOD
 
 
 cat > ${job} << EOD
 #!/bin/bash
+
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=42
@@ -338,6 +373,7 @@ cat > ${job} << EOD
 #SBATCH --partition=gpu
 #SBATCH --time=48:00:00
 #SBATCH --account=su007-rr-gpu
+
 module purge
 
 #this list of modules has been loaded into the collection PT
@@ -349,7 +385,11 @@ module purge
 
 module restore PT
 module list
+
+
 srun $py
+
+
 EOD
 
 chmod 755 ${job}
@@ -357,3 +397,4 @@ chmod g+w ${job}
 chmod 755 ${py}
 
 sbatch ${job}
+
