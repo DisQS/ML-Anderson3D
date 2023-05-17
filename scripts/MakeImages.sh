@@ -21,7 +21,7 @@ MLdir=`pwd`
 echo $MLdir
 
 #WFPLOT=$HOME/Projects/MachineLearning/WFplot/WFplot.GF
-WFPLOT=/storage/disqs/Anderson-DB/MachineLearning-Anderson/WFplot/WFplot.GF
+WFPLOT=/storage/disqs/ML-Anderson3D/ML-Anderson3D/WFplot/WFplot.GF
 #WFPLOT=$MLdir"/../WFplot/WFplot.GF"
 #WFPLOT=/media/phsht/DataDrive/MachineLearning/Anderson/WFplot/WFplot.GF
 
