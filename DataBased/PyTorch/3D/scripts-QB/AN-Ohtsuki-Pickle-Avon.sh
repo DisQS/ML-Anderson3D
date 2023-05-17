@@ -13,10 +13,12 @@ echo $getseed $epochs $re $no $size $categories
 workdir=$(pwd)
 
 cd ../
+strdir=$(pwd)
+cd ../../
 numdir=$(pwd)/ND$size
 echo $numdir
-fdir=$(pwd)/NBs
-sdir=$(pwd)/scripts
+fdir=$strdir/NBs
+sdir=$strdir/scripts
 IFS=', ' read -r -a array <<< $categories
 classes=${#array[@]}
 mkdir -p $workdir/P$no-L$size-$classes
@@ -26,8 +28,8 @@ echo $workdir
 
 cd $workdir
 
-job=`printf "$fdir/Phase-N$no-L$size-$classes.sh"`
-py=`printf "$fdir/Phase-N$no-L$size-$classes.py"`
+job=`printf "$fdir/Num-N$no-L$size-$classes.sh"`
+py=`printf "$fdir/Num-N$no-L$size-$classes.py"`
 echo $py
 
 now=$(date +"%T")
@@ -40,26 +42,29 @@ echo "Current time : $now"
 cat > ${py} << EOD
 #!/usr/bin/env python
 # coding: utf-8
+
 print("--> importing modules")
 import os, shutil, pathlib
 import torch
-print("--> torch version used = 1.9.0, version loaded = " + str(torch.__version__))
-
+print("--> torch version used = 1.7.1, version loaded = " + str(torch.__version__))
 import pandas as pd
+
 from torch import nn
 from torch.utils.data import DataLoader, Dataset, ConcatDataset
 from torch.utils.data import random_split
 from torchvision import models
 from datetime import datetime
 
+
 import numpy as np
+import math
 import pickle
 import time
 import random
+
 import matplotlib
 import matplotlib.pyplot as plt
 print("--> matplotlib version used = 3.3.3, version loaded = " + str(matplotlib.__version__))
-
 import sklearn
 from sklearn.datasets import make_classification
 from sklearn.metrics import confusion_matrix
@@ -69,37 +74,39 @@ from sklearn.svm import SVC
 print("--> sklearn version used = 0.23.2, version loaded = " + str(sklearn.__version__))
 
 print("--> import complete")
+
 print(datetime.now())
 print("$getseed $epochs $re $no $size")
+
+f1 = math.floor(($size-4)/2)
+f2 = math.floor((f1-2)/2)
+fl = math.floor((f2-2)/2)
 
 class NeuralNetwork(nn.Module):
     def __init__(self):
       super(NeuralNetwork, self).__init__()
       self.stack = nn.Sequential(
       nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(5,5,5), stride=1),
-      nn.ReLU(),
       nn.Conv3d(in_channels=64, out_channels=64, kernel_size=(5,5,5), stride=1, padding=2),
       nn.ReLU(),
       nn.MaxPool3d(kernel_size=(2,2,2), stride=2),
       nn.Dropout3d(),
       nn.Conv3d(in_channels=64, out_channels=96, kernel_size=(3,3,3), stride=1),
-      nn.ReLU(),
       nn.Conv3d(in_channels=96, out_channels=96, kernel_size=(3,3,3), stride=1, padding=1),
       nn.ReLU(),
       nn.MaxPool3d(kernel_size=(2,2,2), stride=2),
       nn.Dropout3d(),
       nn.Conv3d(in_channels=96, out_channels=128, kernel_size=(3,3,3), stride=1),
-      nn.ReLU(),
       nn.Conv3d(in_channels=128, out_channels=128, kernel_size=(3,3,3), stride=1, padding=1),
       nn.ReLU(),
       nn.MaxPool3d(kernel_size=(2,2,2), stride=2),
       nn.Dropout3d(),
-      nn.AdaptiveAvgPool3d(output_size=(1, 1, 1)),
       nn.Flatten(),
-      nn.Linear(in_features=128,out_features=1024),
+      nn.Linear(in_features=128*(fl**3),out_features=1024),
       nn.Dropout(),
       nn.Linear(in_features=1024,out_features=len(c))
       )
+
     def forward(self, x):
         logits = self.stack(x)
         return logits
@@ -110,8 +117,10 @@ class CustomImageDataset(Dataset):
         self.img_dir = img_dir
         self.transform = transform
         self.target_transform = target_transform
+
     def __len__(self):
         return len(self.img_labels)
+
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
         image = np.load(img_path, allow_pickle=True)
@@ -125,17 +134,23 @@ class CustomImageDataset(Dataset):
         return image, label
 
 print("--> defining categories")
+
 c = np.fromstring("$categories",dtype=float,sep=",")
 print(c)
+
+
 casez = []
 for i in range (0, len(c)):
     casez = np.append(casez, "W"+str(c[i]))
 print(casez)
+
 print("--> categories have been defined. No. of categories used = " + str(len(c)))
 
 store="N$no-L$size"
+
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
+
 
 if "$getseed" != "N":
         print("--> loading previous trial seed")
@@ -148,32 +163,36 @@ if "$getseed" != "N":
 else:
         seed = torch.seed()
         random.seed(seed)
+
 f = open("$workdir/lastseed.txt", "w")
 f.write(str(seed))
 print("current seed: " + str(seed))
 f.close()
+
 print("--> seed saved to lastseed.txt in $workdir")
 
 path = pathlib.Path("$numdir")
 os.chdir(path)
+
 print("--> creating labels file to identify files to be used")
 if os.path.exists(f"{path}/labels"):
     shutil.rmtree(f"{path}/labels")
 os.mkdir(f"{path}/labels")
-
 for i in range(0,len(casez)):
-        csv_input = pd.read_csv(f'{path}/{casez[i]}/labels.csv')
-        if c[i] > 16.5:
-                csv_input.replace(to_replace=0,value=1,inplace = True)
-        csv_input.to_csv(f'{path}/labels/labels{c[i]}.csv', index=False)
+    csv_input = pd.read_csv(f'{path}/{casez[i]}/labels.csv')
+    csv_input.replace(to_replace=0,value=i,inplace = True)
+    csv_input.to_csv(f'{path}/labels/labels{c[i]}.csv', index=False)
+
 
 src = os.listdir(f'{path}/labels')
 a = pd.concat([pd.read_csv(f'{path}/labels/{file}') for file in src ], ignore_index=True)
 a.to_csv(f'{path}/labels/labels.csv', index=False)
+
 print("--> created labels file")
 
-###################################
 
+
+###################################
 print("--> creating datasets for usage for training, validation and testing")
 batch_size = 32
 ndata = $no
@@ -194,36 +213,47 @@ print("--> training set contains " + str(len(training_data)) + " files")
 print("--> validation set contains " + str(len(validation_data)) + " files")
 print("--> test set contains " + str(len(test_data)) + " files")
 
+
+
 # Create data loaders.
+
 train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
 validation_dataloader = DataLoader(validation_data, batch_size=batch_size, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
-train_features, train_labels = next(iter(train_dataloader))
 
+
+
+
+train_features, train_labels = next(iter(train_dataloader))
 print(f"Feature batch shape: {train_features.size()}")
 print(f"Labels batch shape: {train_labels.size()}")
 img = train_features[0].squeeze()
 label = train_labels
 print(f"Label: {label}")
 
+
+
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
+
 print("--> preparing model")
 model = NeuralNetwork().to(device)
 if $re != 0:
-        for i in range(0,$re):
-                if os.path.exists(f"$workdir/saved models/saved_model[{i+1}].pth"):
-                                        model.load_state_dict(torch.load(f"$workdir/saved models/saved_model[{i+1}].pth"))
-                                        print("Loaded model: $workdir/saved models/saved_model["+ str(i+1) + "].pth")
+       for i in range(0,$re):
+               if os.path.exists(f"$workdir/saved models/saved_model[{i+1}].pth"):
+                        model.load_state_dict(torch.load(f"$workdir/saved models/saved_model[{i+1}].pth"))
+                        print("Loaded model: $workdir/saved models/saved_model["+ str(i+1) + "].pth")
 if torch.cuda.is_available():
     model.cuda()
 print("--> model defined for use")
 print(model)
+
 ################################
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters())
+optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 print(f"optimizer used: {optimizer}")
+
 
 epochs = $epochs - $re
 if $re == 0:
@@ -231,7 +261,6 @@ if $re == 0:
         shutil.rmtree(f"$workdir/saved models")
     os.mkdir(f"$workdir/saved models")
 torch.save(model.state_dict(), f"$workdir/saved models/saved_model[{$re}].pth")
-
 min_valid_loss = np.inf
 tl = np.array([])
 vl = np.array([])
@@ -351,28 +380,33 @@ EOD
 
 cat > ${job} << EOD
 #!/bin/bash
+
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=42
-#SBATCH --mem-per-cpu=3850
-#SBATCH --gres=gpu:ampere_a100:1
-#SBATCH --partition=gpu
+#SBATCH --cpus-per-task=16
+#SBATCH --mem-per-cpu=3700
 #SBATCH --time=48:00:00
-#SBATCH --account=su007-rr-gpu
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:quadro_rtx_6000:1
+
 module purge
 
-
-#this list of modules has been loaded into the collection PT
+# the following modules have been saved into collection PT
 #module load GCCcore/10.2.0
 #module load Python/3.8.6
 #module load GCC/10.2.0  CUDA/11.1.1  OpenMPI/4.0.5
-#module load PyTorch/1.9.0
-#module load torchvision/0.10.0-PyTorch-1.9.0 matplotlib/3.3.3 scikit-learn/0.23.2
-
+#module load PyTorch/1.7.1
+#module load torchvision/0.8.2-PyTorch-1.7.1 
+#module load scikit-learn/0.23.2 
+#module load matplotlib/3.3.3
 
 module restore PT
 module list
+
+
 srun $py
+
+
 EOD
 
 chmod 755 ${job}
@@ -380,3 +414,4 @@ chmod g+w ${job}
 chmod 755 ${py}
 
 sbatch ${job}
+
