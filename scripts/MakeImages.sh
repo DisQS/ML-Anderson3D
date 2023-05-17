@@ -3,10 +3,10 @@
 size=${1:-20}
 nsamples=${2:-2}
 zip=${3:-2}
-color=${4:-1}
-frame=${5:-0}
-type=${6:-png}
-imgsize=${7:-0}
+imgsize=${4:-0}
+type=${5:-png}
+color=${6:-1}
+frame=${7:-0}
 
 # the SCRTP desktop 170523
 module load GCCcore/11.2.0
