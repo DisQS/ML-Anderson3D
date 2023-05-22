@@ -68,9 +68,9 @@ do
     cd ..
 
     if [ $zip -eq 2 ]; then
-	zip -rm `basename $disdir`.zip $disdir
+	zip -rum `basename $disdir`.zip $disdir
     elif [ $zip -eq 1 ]; then
-	zip -r `basename $disdir`.zip $disdir
+	zip -ru `basename $disdir`.zip $disdir
     fi
 done
 
