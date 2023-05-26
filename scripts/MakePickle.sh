@@ -108,4 +108,4 @@ done
 
 cd $codedir
 
-$MAKEDISQS $destdir
+$MAKEDISQS $destdir"/"$pkl_folder"
