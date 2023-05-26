@@ -17,13 +17,13 @@ cd $dir
 cd "L"$size"-"$nb_sample
 pwd
 
-for directory in W*
+for directory in W*/
 do
 
 echo $directory
 cd $directory
 
-jobfile=$size-$directory".sh"
+jobfile=$size".sh"
 pyscript=MakePickle.py
 
 echo $jobfile
@@ -45,9 +45,6 @@ pickle_file = open(new_path,"wb")
 pkl.dump(data, pickle_file)
 pickle_file.close()
 EOD
-
-
-
 
 cat > ${jobfile} << EOD
 #!/bin/bash
