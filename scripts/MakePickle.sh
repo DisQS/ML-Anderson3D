@@ -6,6 +6,8 @@ size=${3:-10}
 nb_sample=${4:-5000}
 cores=${5:-1}
 
+MAKEDISQS=/storage/disqs/MakeDisQS.sh
+
 codedir=`pwd`
 pkl_folder="L"$size"-"$nb_sample"-pkl"
 echo $pkl_folder
@@ -108,3 +110,4 @@ done
 
 cd $codedir
 
+$MAKEDISQS $destdir
