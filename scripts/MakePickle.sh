@@ -36,8 +36,9 @@ import os
 import pickle as pkl
 
 #print(sys.argv)
-print('creation of file',str(sys.argv[2]))
+
 filename, file_extension = os.path.splitext(str(sys.argv[1]))
+print('creation of file',filename+'.pkl')
 new_path=str(sys.argv[2])+'/'+filename+'.pkl'
 data=np.loadtxt(str(sys.argv[1]))
 
