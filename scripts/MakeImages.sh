@@ -2,7 +2,7 @@
 
 size=${1:-20}
 nsamples=${2:-2}
-zip=${3:-2}
+zip=${3:-0}
 imgsize=${4:-0}
 type=${5:-png}
 color=${6:-1}
