@@ -2,7 +2,7 @@
 
 size=${1:-20}
 nsamples=${2:-2}
-zip=${3:-2}
+zip=${3:-0}
 
 echo $size $nsamples $type
 
