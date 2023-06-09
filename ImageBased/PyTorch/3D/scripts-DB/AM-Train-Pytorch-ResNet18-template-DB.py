@@ -14,7 +14,7 @@ import time
 import random
 import seaborn as sns
 import sys
-sys.path.insert(0, '/home/p/phrhmb/Anderson/AM_code')
+#sys.path.insert(0, '/home/p/$USER/Anderson/AM_code')
 from AM_MLtools import *
 from tqdm import tqdm, trange
 import os
@@ -55,7 +55,7 @@ print(subclasses)
 dataname='L'+str(width)+'-'+str(size_samp)+'-s'+str(img_sizeX)+'-'+str(nb_classes)+'-classes'
 data_dir='L'+str(width)+'-'+str(size_samp)+'-s'+str(img_sizeX)
 #datapath = '/storage/disqs/'+'ML-Anderson3D/EvecRaws/'+dataname # SC-RTP
-datapath = '/home/p/phrhmb/Anderson/Data/images/'+data_dir
+datapath = '/home/p/$USER/Anderson/Data/images/'+data_dir
 #print(os.listdir(datapath))
 print(dataname,"\n",datapath)
 
