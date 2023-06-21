@@ -14,7 +14,7 @@ import time
 import random
 import seaborn as sns
 import sys
-sys.path.insert(0, '/home/p/phrhmb/Anderson/AM_code')
+sys.path.insert(0, '/home/p/$USER/Anderson/AM_code')
 from AM_MLtools import *
 from tqdm import tqdm, trange
 import os
