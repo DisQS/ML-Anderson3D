@@ -4,9 +4,10 @@ epochs=${2:-50} #No of epochs
 re=${3:-0} #Set restart point
 no=${4:-4000} #Number of smaples to take from each category
 size=${5:-30} #System size used
-categories=${6:-"15,18"} #List of categories to use separated by ,
+imgsize=${6:-100} #image size used
+categories=${7:-"15,15.25,15.5,15.75,16,16.2,16.3,16.4,16.5,16.6,16.7,16.8,17,17.25,17.5,17.75,18"} #List of categories to use separated by ,
 
-echo $getseed $epochs $re $no $size $categories 
+echo $getseed $epochs $re $no $size $imgsize $categories 
 
 
 #execute file in terminal while in the output folder
@@ -15,21 +16,21 @@ workdir=$(pwd)
 cd ../
 strdir=$(pwd)
 cd ../../
-numdir=$(pwd)/I1000D$size
+numdir=$(pwd)/I5000D"$size"s"$imgsize"
 echo $numdir
 fdir=$strdir/NBs
 sdir=$strdir/scripts
 IFS=', ' read -r -a array <<< $categories
 classes=${#array[@]}
-mkdir -p $workdir/I$no-L$size-$classes
-workdir=$workdir/I$no-L$size-$classes
+mkdir -p $workdir/I$no-L$size-$classes-s$imgsize
+workdir=$workdir/I$no-L$size-$classes-s$imgsize
 echo $numdir
 echo $workdir
 
 cd $workdir
 
-job=`printf "$fdir/Img-N$no-L$size-$classes.sh"`
-py=`printf "$fdir/Img-N$no-L$size-$classes.py"`
+job=`printf "$fdir/Img-N$no-L$size-$classes-s$imgsize.sh"`
+py=`printf "$fdir/Img-N$no-L$size-$classes-s$imgsize.py"`
 echo $py
 
 now=$(date +"%T")
@@ -173,6 +174,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device} device")
 print("--> preparing model from resnet18 network")
 model = models.resnet18()
+model.conv1 = nn.Conv2d(4, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
 model.fc = nn.Linear(in_features=512,out_features=len(c),bias=True)
 if $re != 0:
         for i in range(0,$re):
@@ -195,11 +197,14 @@ if $re == 0:
 torch.save(model.state_dict(), f"$workdir/saved models/saved_model[{$re}].pth")
 min_valid_loss = np.inf
 tl = np.array([])
+ta = np.array([])
 vl = np.array([])
+va = np.array([])
 print("--> beginning training")
 for e in range(epochs):
     st = time.time()
     train_loss = 0.0
+    train_acc = 0.0
     predict = []
     p = []
     model.train()     # Optional when not using Model Specific layer
@@ -218,18 +223,20 @@ for e in range(epochs):
         loss = loss_fn(target,labels)
         loss.backward()
         optimizer.step()
-        train_loss += loss.item() * data.size(0)
+        train_loss += loss.item()
+    train_acc += (predict == p).sum()
 
 
     #np.savetxt(f"$workdir/cm-target-C{len(c)}-D$size-{e+$re}.csv", t.detach().numpy(), delimiter=",")
     #np.savetxt(f"$workdir/cm-tlabels-C{len(c)}-D$size-{e+$re}.csv", l.detach().numpy(), delimiter=",")
     print("--> computing confusion matrix")
-    cm = confusion_matrix(p, predict)
+    cm = confusion_matrix(predict, p)
     print(cm)
     print("--> saving confusion matrix")
     np.savetxt(f"$workdir/cm-train-C{len(c)}-D$size-{e+$re}.csv", cm, delimiter=",")
     
     valid_loss = 0.0
+    valid_acc = 0.0
     vpredict = []
     vp = []
     model.eval()     # Optional when not using Model Specific layer
@@ -247,12 +254,13 @@ for e in range(epochs):
         vp = np.append(vp, vl.detach().numpy())
      
         vloss = loss_fn(vtarget,vlabels)
-        valid_loss = vloss.item() * data.size(0)
+        valid_loss = vloss.item()*vdata.size(0)
+    valid_acc += (vpredict == vp).sum()
 
     #np.savetxt(f"$workdir/cm-vtarget-C{len(c)}-D$size-{e+$re}.csv", vt.detach().numpy(), delimiter=",")
     #np.savetxt(f"$workdir/cm-vlabels-C{len(c)}-D$size-{e+$re}.csv", vl.detach().numpy(), delimiter=",")
     print("--> computing confusion matrix")
-    vcm = confusion_matrix(vp, vpredict)
+    vcm = confusion_matrix(vpredict, vp)
     print(vcm)
     print("--> saving confusion matrix")
     np.savetxt(f"$workdir/cm-valid-C{len(c)}-D$size-{e+$re}.csv", vcm, delimiter=",")
@@ -265,7 +273,7 @@ for e in range(epochs):
     model.eval()
     for i in range(0,int(ndata*0.05*len(c))):
         x, y = test_data[i][0], test_data[i][1]
-        x = x.reshape(1,1,100,100)
+        x = x.reshape(1,4,$imgsize,$imgsize)
         x = torch.from_numpy(x)
         x = x.float()
         with torch.no_grad():
@@ -277,7 +285,7 @@ for e in range(epochs):
 
 
     print("--> computing confusion matrix")
-    tcm = confusion_matrix(tp, tpredict)
+    tcm = confusion_matrix(tpredict, tp)
     print(tcm)
     print("--> saving confusion matrix")
     np.savetxt(f"$workdir/cm-test-C{len(c)}-D$size-{e+$re}.csv", tcm, delimiter=",")
@@ -292,16 +300,28 @@ for e in range(epochs):
         # print(" ")
     
     tl = train_loss / len(train_dataloader)
+    ta = train_acc / len(training_data)
     vl = valid_loss / len(validation_dataloader)
+    va = valid_acc / len(validation_data)
    
     f = open("$workdir/tl.txt", "a+")
     f.write(str(tl) + "\n")
     print(f"--> stored training loss values: {tl}")
     f.close()
 
+    f = open("$workdir/ta.txt", "a+")
+    f.write(str(ta) + "\n")
+    print(f"--> stored training accuracy values: {ta}")
+    f.close()
+
     f = open("$workdir/vl.txt", "a+")
     f.write(str(vl) + "\n")
     print(f"--> stored validation loss values: {vl}")
+    f.close()
+
+    f = open("$workdir/va.txt", "a+")
+    f.write(str(va) + "\n")
+    print(f"--> stored validation accuracy values: {va}")
     f.close()
 
 
