@@ -4,9 +4,10 @@ epochs=${2:-50} #No of epochs
 re=${3:-0} #Set restart point
 no=${4:-4000} #Number of smaples to take from each category
 size=${5:-30} #System size used
-categories=${6:-"15,15.25,15.5,15.75,16,16.2,16.3,16.4,16.5,16.6,16.7,16.8,17,17.25,17.5,17.75,18"} #List of categories to use separated by ,
+imgsize=${6:-100} #image size used
+categories=${7:-"15,15.25,15.5,15.75,16,16.2,16.3,16.4,16.5,16.6,16.7,16.8,17,17.25,17.5,17.75,18"} #List of categories to use separated by ,
 
-echo $getseed $epochs $re $no $size $categories 
+echo $getseed $epochs $re $no $size $imgsize $categories 
 
 
 #execute file in terminal while in the output folder
@@ -15,21 +16,21 @@ workdir=$(pwd)
 cd ../
 strdir=$(pwd)
 cd ../../
-numdir=$(pwd)/I5000D$size
+numdir=$(pwd)/I5000D"$size"s"$imgsize"
 echo $numdir
 fdir=$strdir/NBs
 sdir=$strdir/scripts
 IFS=', ' read -r -a array <<< $categories
 classes=${#array[@]}
-mkdir -p $workdir/I$no-L$size-$classes
-workdir=$workdir/I$no-L$size-$classes
+mkdir -p $workdir/I$no-L$size-$classes-s$imgsize
+workdir=$workdir/I$no-L$size-$classes-s$imgsize
 echo $numdir
 echo $workdir
 
 cd $workdir
 
-job=`printf "$fdir/Img-N$no-L$size-$classes.sh"`
-py=`printf "$fdir/Img-N$no-L$size-$classes.py"`
+job=`printf "$fdir/Img-N$no-L$size-$classes-s$imgsize.sh"`
+py=`printf "$fdir/Img-N$no-L$size-$classes-s$imgsize.py"`
 echo $py
 
 now=$(date +"%T")
@@ -272,7 +273,7 @@ for e in range(epochs):
     model.eval()
     for i in range(0,int(ndata*0.05*len(c))):
         x, y = test_data[i][0], test_data[i][1]
-        x = x.reshape(1,4,100,100)
+        x = x.reshape(1,4,$imgsize,$imgsize)
         x = torch.from_numpy(x)
         x = x.float()
         with torch.no_grad():
@@ -342,15 +343,15 @@ module purge
 
 
 # the following modules have been saved into collection PT
-#module load GCCcore/10.2.0
-#module load Python/3.8.6
-#module load GCC/10.2.0  CUDA/11.1.1  OpenMPI/4.0.5
-#module load PyTorch/1.7.1
-#module load torchvision/0.8.2-PyTorch-1.7.1 
-#module load scikit-learn/0.23.2 
-#module load matplotlib/3.3.3
+module load GCCcore/10.2.0
+module load Python/3.8.6
+module load GCC/10.2.0  CUDA/11.1.1  OpenMPI/4.0.5
+module load PyTorch/1.9.0
+module load torchvision/0.10.0-PyTorch-1.9.0 
+module load scikit-learn/0.23.2 
+module load matplotlib/3.3.3
 
-module restore PT
+#module restore PT
 module list
 
 srun $py

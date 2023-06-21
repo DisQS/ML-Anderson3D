@@ -90,7 +90,7 @@ class CustomImageDataset(Dataset):
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
         image = np.load(img_path, allow_pickle=True)
-        image = np.square(image)
+        #image = np.square(image)
         image = image.reshape(1,$size,$size,$size)
         label = self.img_labels.iloc[idx, 1]
         if self.transform:
@@ -395,13 +395,13 @@ cat > ${job} << EOD
 module purge
 
 #this list of modules has been loaded into the collection PT
-#module load GCCcore/10.2.0
-#module load Python/3.8.6
-#module load GCC/10.2.0  CUDA/11.1.1  OpenMPI/4.0.5
-#module load PyTorch/1.9.0
-#module load torchvision/0.10.0-PyTorch-1.9.0 matplotlib/3.3.3 scikit-learn/0.23.2
+module load GCCcore/10.2.0
+module load Python/3.8.6
+module load GCC/10.2.0  CUDA/11.1.1  OpenMPI/4.0.5
+module load PyTorch/1.9.0
+module load torchvision/0.10.0-PyTorch-1.9.0 matplotlib/3.3.3 scikit-learn/0.23.2
 
-module restore PT
+#module restore PT
 module list
 
 
