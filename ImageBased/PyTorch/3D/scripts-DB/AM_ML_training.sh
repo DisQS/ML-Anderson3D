@@ -6,7 +6,8 @@ py=${3=Train-Pytorch-class_cor.py}
 flag=${4:-0}
 size=${5:-50}
 size_img=${6:-100}
-classes=${7:-'W15.0, W15.25, W15.5, W15.75, W16.0, W16.2, W16.3, W16.4, W16.5, W16.6, W16.7, W16.8, W17.0, W17.25, W17.5, W17.75, W18.0'}
+lr=${7:-0.001}
+classes=${8:-'15.0,15.25,15.5,15.75,16.0,16.2,16.3,16.4,16.5,16.6,16.7,16.8,17.0,17.25,17.5,17.75,18.0'}
 size_samp=5000
 validation_split=0.1
 batch_size=32
@@ -42,7 +43,7 @@ module restore TorchGPU_1_11_0_
 pwd
 echo "--- working in directory=$seed"
 
-srun python $codedir/$py $seed $size $size_img $size_samp $validation_split $batch_size $num_epochs $flag $classes
+srun python $codedir/$py $seed $size $size_img $size_samp $validation_split $batch_size $num_epochs $flag $lr $classes
 
 
 
