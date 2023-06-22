@@ -43,6 +43,7 @@ do
 	echo $AMdir
 	mkdir -p $MLdir/$disdir
 	cp -u --preserve=timestamps $AMdir/Evec*.bz2 $MLdir/$disdir
+	#rsync -vu $AMdir/Evec*.bz2 $MLdir/$disdir
     done
 
     #cd ..
@@ -58,7 +59,7 @@ do
 
     echo $disdir
     cd $disdir
-    bunzip2 -f *$size*.bz2
+    bunzip2 -kf *$size*.bz2
 
     for evec in Evec*.raw
     do
