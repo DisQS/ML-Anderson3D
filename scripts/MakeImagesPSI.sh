@@ -11,7 +11,7 @@ frame=${7:-0}
 # the SCRTP desktop 170523
 module load GCCcore/11.2.0
 
-echo $size $nsamples $type
+echo $size $nsamples $zip $imgsize $type
 
 #datadir="/media/phsht/DataDrive/AML3D_data"
 datadir="/storage/disqs/phsht/Archive-DATA/MULTIFRACTALS/AML3D_data"
@@ -21,7 +21,7 @@ MLdir=`pwd`
 echo $MLdir
 
 #WFPLOT=$HOME/Projects/MachineLearning/WFplot/WFplot.GF
-WFPLOT=/storage/disqs/ML-Anderson3D/ML-Anderson3D/WFplot/WFplotPSI.GF
+WFPLOT=/storage/disqs/ML-Anderson3D/ML-Anderson3D/WFplot-git/src/WFplotPSI.GF
 #WFPLOT=$MLdir"/../WFplot/WFplot.GF"
 #WFPLOT=/media/phsht/DataDrive/MachineLearning/Anderson/WFplot/WFplot.GF
 
@@ -38,11 +38,11 @@ do
     echo $disdir
     #cd $disdir
 
-    for dir in `ls -d $disdir/L$size/AM-* | head -$nsamples`
+    for AMdir in `ls -d $disdir/L$size/AM-* | head -$nsamples`
     do
-	echo $dir
+	echo $AMdir
 	mkdir -p $MLdir/$disdir
-	cp -u --preserve=timestamps $dir/Evec*.bz2 $MLdir/$disdir
+	cp -u --preserve=timestamps $AMdir/Evec*.bz2 $MLdir/$disdir
     done
 
     #cd ..
@@ -70,7 +70,7 @@ do
 	else
 	    convert -resize $imgsize"x"$imgsize\! $evec.eps `basename $evec .raw.eps`.$type
 	fi
-	rm -f $evec.eps $evec
+	#rm -f $evec.eps $evec
     done
     cd ..
 
