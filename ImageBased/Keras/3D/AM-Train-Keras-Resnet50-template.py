@@ -12,7 +12,7 @@ img_sizeX= 500
 img_sizeY= img_sizeX
 
 validation_split= 0.1
-batch_size= 64
+batch_size= 32
 myepochs= num_epochs= 100
 mylr= 0.01
 mywd= 1e-6
@@ -167,7 +167,7 @@ def create_CNN():
     
     return model
 
-print('    CNN architecture (Ohtsuki) created successfully!')
+print('    CNN architecture (ResNet50) created successfully!')
 
 
 print("--- Choose the Optimizer and the Cost Function")
