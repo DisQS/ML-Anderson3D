@@ -7,10 +7,10 @@ print("--- parameter choices")
 
 myseed= 999999
 width= 100
-nimages= 5000
+nimages= 100
 
 #img_sizeX= 100; batch_size= 128
-img_sizeX= 500; batch_size= 12
+img_sizeX= 100; batch_size= 12
 
 img_sizeY= img_sizeX
 
@@ -22,8 +22,8 @@ mylr= 0.01
 mywd= 1e-6
 
 dataname='L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
-datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
-#datapath = '/mnt/DataDrive/'+'ML-Data/Anderson/Images/'+dataname # Ubuntu home RAR
+#datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
+datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
 print(dataname,"\n",datapath)
 
 method='Keras-Resnet50-'+str(myseed)#+'-e'+str(num_epochs) #+'-bs'+str(batch_size)
