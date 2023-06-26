@@ -5,16 +5,16 @@
 
 print("--- parameter choices")
 
-myseed= 555555
+myseed= 999999
 width= 100
 nimages= 100
 
 #img_sizeX= 100; batch_size= 128
-img_sizeX= 500; batch_size= 8
+img_sizeX= 100; batch_size= 128
 
 img_sizeY= img_sizeX
 
-num_epochs= 10
+num_epochs= 30
 step_epoch= 2
 validation_split= 0.1
 
@@ -27,7 +27,7 @@ datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
 print(dataname,"\n",datapath)
 
 method='Keras-Resnet50-'+str(myseed)#+'-e'+str(num_epochs) #+'-bs'+str(batch_size)
-print(method,"\n")
+print(method)
 
 savepath = './'+dataname+'/'
 import os
@@ -37,7 +37,8 @@ except FileExistsError:
     pass
 
 print(savepath)
-previousmodelpath=''
+previousmodelpath='EMPTY'
+previousmodelname='EMPTY'
 
 print("--- initializations")
 
@@ -197,33 +198,66 @@ def compile_model(optimizer=opt):
 model = compile_model()
 print(model.summary())
 
-print('--- model compiled successfully and ready to be trained.')
+print('--- model and parameter defined successfully, ready for training')
 
 print("--- learning the images")
 
+previousmodelloaded= False
+
 for epochL in range(1,num_epochs,step_epoch):
 
-    print('+++> epochL:',epochL, ' of ', num_epochs)
+    print('+++> epochs',epochL,'-',epochL+step_epoch-1,'of', num_epochs)
 
-    modelname = 'Model_'+method+'_e'+str(epochL+1)+'_'+dataname+'.pth'
-    historyname = 'History_'+method+'_e'+str(epochL+1)+'_'+dataname+'.pkl'
-    print(method,"\n",modelname,"\n",historyname)
+    print(previousmodelpath,previousmodelloaded)
+
+    modelname = 'Model_'+method+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pth'
+    historyname = 'History_'+method+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pkl'
+    print(modelname,"\n",historyname)
 
     modelpath = savepath+modelname
     historypath = savepath+historyname
-    print(savepath,modelpath,historypath)
 
+    print('--- initiating training for',modelpath)
+    
     if (os.path.isfile(modelpath) == True):
-        print(modelpath," exists, skipping ---!")
+        print('---',modelname," exists, skipping ---!")
+        previousmodelpath=modelpath
         continue
     else:
-        print(modelpath,"not found, loading previous training!")
-        if(os.path.isfile(previousmodelpath)):
+        print('---',modelname,"does not yet exist --- needs training!")
+        if(previousmodelloaded == True): # previous model is in memory already
+            print('--- continuing with model as in memory')
+            #continue
+        elif(previousmodelpath != 'EMPTY'): #previous model not yet loaded in memory
+            print('--- found', previousmodelpath, '--- loading!')
+            model=load_model(previousmodelpath)
+            previousmodelloaded= True
+        else:
+            print('--- previous model is ',previousmodelpath,", needs fresh restart!")
+
+    """ old version
+    if (os.path.isfile(modelpath) == True):
+        print(modelpath," exists, skipping ---!")
+        previousmodelpath=modelpath
+        continue
+    else:
+        print(modelpath,"not found, checking for existing training!")
+        if(previousmodelpath != 'EMPTY'): # there is not SAVED model we can use
+            if(previousmodelloaded == False): # 
+                print('found', previousmodelpath, '--- loading!')
+                model=load_model(previousmodelpath)
+                previousmodelloaded= True
+            else:
+                continue # previous model should be in memory
+        elif(os.path.isfile(previousmodelpath)):
+            print('found', previousmodelpath, '--- loading!')
             model=load_model(previousmodelpath)
         else:
-            print('previous model ',previousmodelpath," ALSO not found, needs fresh restart!")
+            print('previous model is ',previousmodelpath,", needs fresh restart!")
+    """
 
     # train DNN and store training info in history
+    print('--- starting the training')
     history = model.fit_generator(training_set,
                                   steps_per_epoch = training_set.samples // batch_size,
                                   epochs = step_epoch,
@@ -232,10 +266,11 @@ for epochL in range(1,num_epochs,step_epoch):
 
     # tf.keras.models.save_model(history,'Anderson_Ohtsuki_model_L20_500_keras_SGD_0_01_good_input_size.h5') 
 
-    print("--- saving the current state")
+    print('--- saving the current state to',modelpath)
 
     model.save(modelpath) 
     previousmodelpath=modelpath
+    previousmodelname=modelname
     
     import pickle 
     f=open(historypath,"wb")
@@ -270,7 +305,7 @@ for epochL in range(1,num_epochs,step_epoch):
     plt.title(dataname)
     #plt.show()
     plt.close()
-    fig.savefig(savepath+'/'+method+'_e'+str(epochL+1)+'_'+dataname+'_accuracy'+'.png')
+    fig.savefig(savepath+'/'+method+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'_accuracy'+'.png')
     
     # summarize history for loss
     fig=plt.figure()
@@ -282,7 +317,7 @@ for epochL in range(1,num_epochs,step_epoch):
     plt.title(dataname)
     #plt.show()
     plt.close()
-    fig.savefig(savepath+'/'+method+'_e'+str(epochL+1)+'_'+dataname+'_loss'+'.png')
+    fig.savefig(savepath+'/'+method+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'_loss'+'.png')
     
     print("--> confusion matrix")
     
@@ -295,7 +330,8 @@ for epochL in range(1,num_epochs,step_epoch):
     y_pred = np.argmax(Y_pred, axis=1)
     
     #basic confusion matrix
-    confusion_matrix(validation_set.classes, y_pred)
+    cfm=confusion_matrix(validation_set.classes, y_pred)
+    print(cfm)
     
     #print(os.getcwd())
     #os.chdir('../../../../PyCode/')
@@ -303,7 +339,7 @@ for epochL in range(1,num_epochs,step_epoch):
     from plot_confusion_matrix import *
     
     print(plot_confusion_matrix(confusion_matrix(validation_set.classes, y_pred),
-                                label,savepath+'/'+method+'_e'+str(epochL+1)+
+                                label,savepath+'/'+method+'_e'+str(epochL+step_epoch-1)+
                                 '_'+dataname+'_cfm'+'.png',
                                 title='Confusion matrix for '+dataname,
                                 cmap=None,
