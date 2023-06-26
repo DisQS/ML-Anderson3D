@@ -7,14 +7,14 @@ print("--- parameter choices")
 
 myseed= 999999
 width= 100
-nimages= 100
+nimages= 5000
 
 #img_sizeX= 100; batch_size= 128
-img_sizeX= 100; batch_size= 128
+img_sizeX= 500; batch_size= 12
 
 img_sizeY= img_sizeX
 
-num_epochs= 30
+num_epochs= 100
 step_epoch= 2
 validation_split= 0.1
 
@@ -217,7 +217,7 @@ for epochL in range(1,num_epochs,step_epoch):
     modelpath = savepath+modelname
     historypath = savepath+historyname
 
-    print('--- initiating training for',modelpath)
+    print('--- initiating training for',modelname)
     
     if (os.path.isfile(modelpath) == True):
         print('---',modelname," exists, skipping ---!")
