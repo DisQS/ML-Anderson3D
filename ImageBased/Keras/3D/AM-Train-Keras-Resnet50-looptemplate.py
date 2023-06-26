@@ -5,7 +5,7 @@
 
 print("--- parameter choices")
 
-myseed= 111111
+myseed= 555555
 width= 100
 nimages= 100
 
@@ -14,7 +14,7 @@ img_sizeX= 500; batch_size= 8
 
 img_sizeY= img_sizeX
 
-num_epochs= 6
+num_epochs= 10
 step_epoch= 2
 validation_split= 0.1
 
@@ -26,7 +26,7 @@ datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
 #datapath = '/mnt/DataDrive/'+'ML-Data/Anderson/Images/'+dataname # Ubuntu home RAR
 print(dataname,"\n",datapath)
 
-method='Keras-Resnet50-'+str(myseed)+'-e'+str(num_epochs) #+'-bs'+str(batch_size)
+method='Keras-Resnet50-'+str(myseed)#+'-e'+str(num_epochs) #+'-bs'+str(batch_size)
 print(method,"\n")
 
 savepath = './'+dataname+'/'
@@ -37,6 +37,7 @@ except FileExistsError:
     pass
 
 print(savepath)
+previousmodelpath=''
 
 print("--- initializations")
 
@@ -81,6 +82,8 @@ from keras.layers import AveragePooling2D, Flatten
 from keras.layers import Dropout
 from keras import optimizers
 from keras.models import load_model
+
+#from tensorflow.keras.models import load_model
 
 print("--- starting the main code")
 
@@ -202,6 +205,24 @@ for epochL in range(1,num_epochs,step_epoch):
 
     print('+++> epochL:',epochL, ' of ', num_epochs)
 
+    modelname = 'Model_'+method+'_e'+str(epochL+1)+'_'+dataname+'.pth'
+    historyname = 'History_'+method+'_e'+str(epochL+1)+'_'+dataname+'.pkl'
+    print(method,"\n",modelname,"\n",historyname)
+
+    modelpath = savepath+modelname
+    historypath = savepath+historyname
+    print(savepath,modelpath,historypath)
+
+    if (os.path.isfile(modelpath) == True):
+        print(modelpath," exists, skipping ---!")
+        continue
+    else:
+        print(modelpath,"not found, loading previous training!")
+        if(os.path.isfile(previousmodelpath)):
+            model=load_model(previousmodelpath)
+        else:
+            print('previous model ',previousmodelpath," ALSO not found, needs fresh restart!")
+
     # train DNN and store training info in history
     history = model.fit_generator(training_set,
                                   steps_per_epoch = training_set.samples // batch_size,
@@ -213,15 +234,8 @@ for epochL in range(1,num_epochs,step_epoch):
 
     print("--- saving the current state")
 
-    modelname = 'Model_'+method+'_'+str(epochL+1)+'_'+dataname+'.pth'
-    historyname = 'History_'+method+'_'+str(epochL+1)+'_'+dataname+'.pkl'
-    print(method,"\n",modelname,"\n",historyname)
-
-    modelpath = savepath+modelname
-    historypath = savepath+historyname
-    print(savepath,modelpath,historypath)
-
     model.save(modelpath) 
+    previousmodelpath=modelpath
     
     import pickle 
     f=open(historypath,"wb")
@@ -256,7 +270,7 @@ for epochL in range(1,num_epochs,step_epoch):
     plt.title(dataname)
     #plt.show()
     plt.close()
-    fig.savefig(savepath+'/'+method+'_'+str(epochL+1)+'_'+dataname+'_accuracy'+'.png')
+    fig.savefig(savepath+'/'+method+'_e'+str(epochL+1)+'_'+dataname+'_accuracy'+'.png')
     
     # summarize history for loss
     fig=plt.figure()
@@ -268,7 +282,7 @@ for epochL in range(1,num_epochs,step_epoch):
     plt.title(dataname)
     #plt.show()
     plt.close()
-    fig.savefig(savepath+'/'+method+'_'+str(epochL+1)+'_'+dataname+'_loss'+'.png')
+    fig.savefig(savepath+'/'+method+'_e'+str(epochL+1)+'_'+dataname+'_loss'+'.png')
     
     print("--> confusion matrix")
     
@@ -289,7 +303,7 @@ for epochL in range(1,num_epochs,step_epoch):
     from plot_confusion_matrix import *
     
     print(plot_confusion_matrix(confusion_matrix(validation_set.classes, y_pred),
-                                label,savepath+'/'+method+'_'+str(epochL+1)+
+                                label,savepath+'/'+method+'_e'+str(epochL+1)+
                                 '_'+dataname+'_cfm'+'.png',
                                 title='Confusion matrix for '+dataname,
                                 cmap=None,
