@@ -21,9 +21,9 @@ validation_split= 0.1
 mylr= 0.01
 mywd= 1e-6
 
-dataname='JPG-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
-datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
-#datapath = '/mnt/DataDrive/'+'ML-Data/Anderson/Images/'+dataname # Ubuntu home RAR
+dataname='L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
+#datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
+datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
 print(dataname,"\n",datapath)
 
 method='Keras-Resnet50-'+str(myseed)#+'-e'+str(num_epochs) #+'-bs'+str(batch_size)
