@@ -7,21 +7,21 @@ print("--- parameter choices")
 
 myseed= 999999
 width= 100
-nimages= 5000
+nimages= 500
 
 #img_sizeX= 100; batch_size= 128
-img_sizeX= 500; batch_size= 12
+img_sizeX= 100; batch_size= 12
 
 img_sizeY= img_sizeX
 
 num_epochs= 100
-step_epoch= 2
+step_epoch= 10
 validation_split= 0.1
 
 mylr= 0.01
 mywd= 1e-6
 
-dataname='L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
+dataname='JPG-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
 datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
 #datapath = '/mnt/DataDrive/'+'ML-Data/Anderson/Images/'+dataname # Ubuntu home RAR
 print(dataname,"\n",datapath)
@@ -130,7 +130,7 @@ training_set = train_datagen.flow_from_directory(datapath,
                                                  target_size = (img_sizeX,img_sizeY),
                                                  batch_size = batch_size, 
                                                  class_mode='categorical',
-                                                 color_mode='rgba',
+                                                 color_mode='rgb',
                                                  shuffle=True,seed=myseed)
 
 validation_set= train_datagen.flow_from_directory(datapath, 
@@ -138,7 +138,7 @@ validation_set= train_datagen.flow_from_directory(datapath,
                                               target_size = (img_sizeX,img_sizeY),
                                               batch_size = batch_size,
                                               class_mode='categorical',
-                                              color_mode='rgba',
+                                              color_mode='rgb',
                                               shuffle=False,seed=myseed)
 
 num_of_train_samples = training_set.samples
@@ -164,7 +164,7 @@ from keras.applications.resnet50 import ResNet50, preprocess_input, decode_predi
 from keras.preprocessing import image
 
 #resnet = ResNet50(include_top=False,weights='imagenet',input_shape=(img_sizeX, img_sizeY, 4))
-resnet = ResNet50(include_top=False,weights=None,input_shape=(img_sizeX, img_sizeY, 4))
+resnet = ResNet50(include_top=False,weights=None,input_shape=(img_sizeX, img_sizeY, 3))
 
 def create_CNN():
     # instantiate model
@@ -208,11 +208,11 @@ for epochL in range(1,num_epochs,step_epoch):
 
     print('+++> epochs',epochL,'-',epochL+step_epoch-1,'of', num_epochs)
 
-    print(previousmodelpath,previousmodelloaded)
+    #print(previousmodelpath,previousmodelloaded)
 
     modelname = 'Model_'+method+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pth'
     historyname = 'History_'+method+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pkl'
-    print(modelname,"\n",historyname)
+    #print('--- training for',modelname,"\n",historyname)
 
     modelpath = savepath+modelname
     historypath = savepath+historyname
