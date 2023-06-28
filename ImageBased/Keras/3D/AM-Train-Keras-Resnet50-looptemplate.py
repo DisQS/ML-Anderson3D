@@ -59,7 +59,6 @@ np.set_printoptions(threshold=sys.maxsize)
 helperpath= '/storage/disqs/ML-Anderson3D/'+'ML-Anderson3D/PyCode' # SC-RTP
 sys.path.insert(0,helperpath)
 
-
 import random as rn
 import os
 import matplotlib.pyplot as plt
@@ -237,27 +236,6 @@ for epochL in range(1,num_epochs,step_epoch):
             previousmodelloaded= True
         else:
             print('--- previous model is ',previousmodelpath,", needs fresh restart!")
-
-    """ old version
-    if (os.path.isfile(modelpath) == True):
-        print(modelpath," exists, skipping ---!")
-        previousmodelpath=modelpath
-        continue
-    else:
-        print(modelpath,"not found, checking for existing training!")
-        if(previousmodelpath != 'EMPTY'): # there is not SAVED model we can use
-            if(previousmodelloaded == False): # 
-                print('found', previousmodelpath, '--- loading!')
-                model=load_model(previousmodelpath)
-                previousmodelloaded= True
-            else:
-                continue # previous model should be in memory
-        elif(os.path.isfile(previousmodelpath)):
-            print('found', previousmodelpath, '--- loading!')
-            model=load_model(previousmodelpath)
-        else:
-            print('previous model is ',previousmodelpath,", needs fresh restart!")
-    """
 
     # train DNN and store training info in history
     print('--- starting the training')
