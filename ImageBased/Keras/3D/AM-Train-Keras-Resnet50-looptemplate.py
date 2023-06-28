@@ -5,12 +5,12 @@
 
 print("--- parameter choices")
 
-myseed= 999999
+myseed= 111111
 width= 100
 nimages= 500
 
-#img_sizeX= 100; batch_size= 128
-img_sizeX= 100; batch_size= 12
+img_sizeX= 100; batch_size= 128
+#img_sizeX= 500; batch_size= 12
 
 img_sizeY= img_sizeX
 
@@ -21,9 +21,11 @@ validation_split= 0.1
 mylr= 0.01
 mywd= 1e-6
 
-dataname='L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
-#datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
-datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
+dataname='JPG-C2-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
+#dataname='Pet-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
+#dataname='L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
+datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
+#datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
 print(dataname,"\n",datapath)
 
 method='Keras-Resnet50-'+str(myseed)#+'-e'+str(num_epochs) #+'-bs'+str(batch_size)
@@ -151,6 +153,7 @@ for i in range(6):
     for x,y in validation_set:
         plt.imshow(x[0],cmap='hsv')
         #plt.title('y={}'.format(y[0]))
+        #plt.title(labels[i])
         plt.axis('off')
         break
 plt.tight_layout()
@@ -163,8 +166,8 @@ print("--- building the CNN")
 from keras.applications.resnet50 import ResNet50, preprocess_input, decode_predictions
 from keras.preprocessing import image
 
-#resnet = ResNet50(include_top=False,weights='imagenet',input_shape=(img_sizeX, img_sizeY, 4))
-resnet = ResNet50(include_top=False,weights=None,input_shape=(img_sizeX, img_sizeY, 3))
+resnet = ResNet50(include_top=False,weights='imagenet',input_shape=(img_sizeX, img_sizeY, 3))
+#resnet = ResNet50(include_top=False,weights=None,input_shape=(img_sizeX, img_sizeY, 3))
 
 def create_CNN():
     # instantiate model
@@ -187,7 +190,7 @@ def compile_model(optimizer=opt):
     model=create_CNN()
     # compile the model
     model.compile(loss=keras.losses.categorical_crossentropy,
-                  optimizer=optimizer,
+                  optimizer=opt,
                   metrics=['accuracy','categorical_crossentropy'])
     return model
 
