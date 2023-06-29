@@ -14,19 +14,20 @@ img_sizeX= 100; batch_size= 128
 
 img_sizeY= img_sizeX
 
-num_epochs= 100
+num_epochs= 50
 step_epoch= 10
 validation_split= 0.1
 
-mylr= 0.01
+mylr= 0.0001
 mywd= 1e-6
 
-dataname='JPG-C2-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
+#dataname='JPG-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
 #dataname='Pet-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
-#dataname='L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
+dataname='L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
 
-#datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
-datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
+datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
+#datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
+
 print(dataname,"\n",datapath)
 
 method='Keras-Resnet50-'+str(myseed)#+'-e'+str(num_epochs) #+'-bs'+str(batch_size)
@@ -132,7 +133,7 @@ training_set = train_datagen.flow_from_directory(datapath,
                                                  target_size = (img_sizeX,img_sizeY),
                                                  batch_size = batch_size, 
                                                  class_mode='categorical',
-                                                 color_mode='rgb',
+                                                 color_mode='rgba',
                                                  shuffle=True,seed=myseed)
 
 validation_set= train_datagen.flow_from_directory(datapath, 
@@ -140,15 +141,24 @@ validation_set= train_datagen.flow_from_directory(datapath,
                                               target_size = (img_sizeX,img_sizeY),
                                               batch_size = batch_size,
                                               class_mode='categorical',
-                                              color_mode='rgb',
+                                              color_mode='rgba',
                                               shuffle=False,seed=myseed)
 
 num_of_train_samples = training_set.samples
 num_of_valid_samples = validation_set.samples
 num_classes = len(validation_set.class_indices)
 
+#print('--- Configure the dataset for performance')
+#AUTOTUNE = tf.data.AUTOTUNE
+#training_set = training_set.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
+#validation_set = validation_set.cache().prefetch(buffer_size=AUTOTUNE)
+
 fig=plt.figure(figsize=(10,5))
+#for i in range(6):
 for i in range(6):
+#    plotsample=rn.sample(range(num_of_valid_samples),1)
+#    plotsampleid=plotsample[0]
+#    print(i,plotsampleid)
     plt.subplot(2,3,i+1)
     for x,y in validation_set:
         plt.imshow(x[0],cmap='hsv')
@@ -163,11 +173,12 @@ fig.savefig(savepath+'/'+method+'_'+dataname+'_images'+'.png')
 
 print("--- building the CNN")
 
-from keras.applications.resnet50 import ResNet50, preprocess_input, decode_predictions
+from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input, decode_predictions
+#from keras.applications.resnet50 import ResNet50, preprocess_input, decode_predictions
 from keras.preprocessing import image
 
-resnet = ResNet50(include_top=False,weights='imagenet',input_shape=(img_sizeX, img_sizeY, 3))
-#resnet = ResNet50(include_top=False,weights=None,input_shape=(img_sizeX, img_sizeY, 3))
+#resnet = ResNet50(include_top=False,weights='imagenet',input_shape=(img_sizeX, img_sizeY, 3))
+resnet = ResNet50(include_top=False,weights=None,input_shape=(img_sizeX, img_sizeY, 4))
 
 def create_CNN():
     # instantiate model
@@ -183,7 +194,7 @@ print('    CNN architecture (ResNet50) created successfully!')
 print("--- Choosing the optimizer and the cost function")
 
 #opt = optimizers.SGD(lr=mylr, decay=mywd)
-opt = keras.optimizers.Adam(lr=mylr, decay=mywd)
+opt = tf.keras.optimizers.Adam(lr=mylr, decay=mywd)
 
 def compile_model(optimizer=opt):
     # create the mode
@@ -213,8 +224,8 @@ for epochL in range(1,num_epochs,step_epoch):
 
     #print(previousmodelpath,previousmodelloaded)
 
-    modelname = 'Model_'+method+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pth'
-    historyname = 'History_'+method+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pkl'
+    modelname = method+'_model'+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pth'
+    historyname = method+'_history'+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pkl'
     #print('--- training for',modelname,"\n",historyname)
 
     modelpath = savepath+modelname
@@ -222,7 +233,7 @@ for epochL in range(1,num_epochs,step_epoch):
 
     print('--- initiating training for',modelname)
     
-    if (os.path.isfile(modelpath) == True):
+    if (os.path.isdir(modelpath) == True):
         print('---',modelname," exists, skipping ---!")
         previousmodelpath=modelpath
         continue
@@ -254,7 +265,7 @@ for epochL in range(1,num_epochs,step_epoch):
     previousmodelpath=modelpath
     previousmodelname=modelname
     previousmodelloaded=True
-    
+
     import pickle 
     f=open(historypath,"wb")
     pickle.dump(history,f)
