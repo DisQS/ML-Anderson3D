@@ -5,11 +5,11 @@
 
 print("--- parameter choices")
 
-myseed= 111111
+myseed= 4001
 width= 100
-nimages= 500
+nimages= 5000
 
-img_sizeX= 100; batch_size= 128
+img_sizeX= 200; batch_size= 128
 #img_sizeX= 500; batch_size= 12
 
 img_sizeY= img_sizeX
@@ -18,12 +18,13 @@ num_epochs= 100
 step_epoch= 10
 validation_split= 0.1
 
-mylr= 0.01
+mylr= 0.0001
 mywd= 1e-6
 
-dataname='JPG-C2-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
+#dataname='JPG-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
 #dataname='Pet-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
-#dataname='L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
+dataname='L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
+
 datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
 #datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
 print(dataname,"\n",datapath)
@@ -131,7 +132,7 @@ training_set = train_datagen.flow_from_directory(datapath,
                                                  target_size = (img_sizeX,img_sizeY),
                                                  batch_size = batch_size, 
                                                  class_mode='categorical',
-                                                 color_mode='rgb',
+                                                 color_mode='rgba',
                                                  shuffle=True,seed=myseed)
 
 validation_set= train_datagen.flow_from_directory(datapath, 
@@ -139,7 +140,7 @@ validation_set= train_datagen.flow_from_directory(datapath,
                                               target_size = (img_sizeX,img_sizeY),
                                               batch_size = batch_size,
                                               class_mode='categorical',
-                                              color_mode='rgb',
+                                              color_mode='rgba',
                                               shuffle=False,seed=myseed)
 
 num_of_train_samples = training_set.samples
@@ -162,11 +163,12 @@ fig.savefig(savepath+'/'+method+'_'+dataname+'_images'+'.png')
 
 print("--- building the CNN")
 
-from keras.applications.resnet50 import ResNet50, preprocess_input, decode_predictions
+from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input, decode_predictions
+#from keras.applications.resnet50 import ResNet50, preprocess_input, decode_predictions
 from keras.preprocessing import image
 
-resnet = ResNet50(include_top=False,weights='imagenet',input_shape=(img_sizeX, img_sizeY, 3))
-#resnet = ResNet50(include_top=False,weights=None,input_shape=(img_sizeX, img_sizeY, 3))
+#resnet = ResNet50(include_top=False,weights='imagenet',input_shape=(img_sizeX, img_sizeY, 3))
+resnet = ResNet50(include_top=False,weights=None,input_shape=(img_sizeX, img_sizeY, 4))
 
 def create_CNN():
     # instantiate model
@@ -182,7 +184,7 @@ print('    CNN architecture (ResNet50) created successfully!')
 print("--- Choosing the optimizer and the cost function")
 
 #opt = optimizers.SGD(lr=mylr, decay=mywd)
-opt = keras.optimizers.Adam(lr=mylr, decay=mywd)
+opt = tf.keras.optimizers.Adam(lr=mylr, decay=mywd)
 
 def compile_model(optimizer=opt):
     # create the mode
@@ -252,7 +254,8 @@ for epochL in range(1,num_epochs,step_epoch):
     model.save(modelpath) 
     previousmodelpath=modelpath
     previousmodelname=modelname
-    
+    previousmodelloaded= True
+
     import pickle 
     f=open(historypath,"wb")
     pickle.dump(history,f)
