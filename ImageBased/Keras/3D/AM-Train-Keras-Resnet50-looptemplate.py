@@ -7,14 +7,14 @@ print("--- parameter choices")
 
 myseed= 4000
 width= 100
-nimages= 100
+nimages= 500
 
 img_sizeX= 100; batch_size= 128
 #img_sizeX= 500; batch_size= 12
 
 img_sizeY= img_sizeX
 
-num_epochs= 30
+num_epochs= 50
 step_epoch= 10
 validation_split= 0.1
 
@@ -147,8 +147,7 @@ num_of_train_samples = training_set.samples
 num_of_valid_samples = validation_set.samples
 num_classes = len(validation_set.class_indices)
 
-print('--- Configure the dataset for performance')
-
+#print('--- Configure the dataset for performance')
 #AUTOTUNE = tf.data.AUTOTUNE
 #training_set = training_set.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
 #validation_set = validation_set.cache().prefetch(buffer_size=AUTOTUNE)
