@@ -5,16 +5,16 @@
 
 print("--- parameter choices")
 
-myseed= 4001
+myseed= 4000
 width= 100
-nimages= 500
+nimages= 100
 
 img_sizeX= 100; batch_size= 128
 #img_sizeX= 500; batch_size= 12
 
 img_sizeY= img_sizeX
 
-num_epochs= 100
+num_epochs= 30
 step_epoch= 10
 validation_split= 0.1
 
@@ -147,8 +147,18 @@ num_of_train_samples = training_set.samples
 num_of_valid_samples = validation_set.samples
 num_classes = len(validation_set.class_indices)
 
+print('--- Configure the dataset for performance')
+
+#AUTOTUNE = tf.data.AUTOTUNE
+#training_set = training_set.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
+#validation_set = validation_set.cache().prefetch(buffer_size=AUTOTUNE)
+
 fig=plt.figure(figsize=(10,5))
+#for i in range(6):
 for i in range(6):
+#    plotsample=rn.sample(range(num_of_valid_samples),1)
+#    plotsampleid=plotsample[0]
+#    print(i,plotsampleid)
     plt.subplot(2,3,i+1)
     for x,y in validation_set:
         plt.imshow(x[0],cmap='hsv')
@@ -214,8 +224,8 @@ for epochL in range(1,num_epochs,step_epoch):
 
     #print(previousmodelpath,previousmodelloaded)
 
-    modelname = method+'_Model_'+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pth'
-    historyname = method+'_History_'+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pkl'
+    modelname = method+'_model'+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pth'
+    historyname = method+'_history'+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pkl'
     #print('--- training for',modelname,"\n",historyname)
 
     modelpath = savepath+modelname
