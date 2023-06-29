@@ -7,9 +7,9 @@ print("--- parameter choices")
 
 myseed= 4001
 width= 100
-nimages= 5000
+nimages= 500
 
-img_sizeX= 200; batch_size= 128
+img_sizeX= 100; batch_size= 128
 #img_sizeX= 500; batch_size= 12
 
 img_sizeY= img_sizeX
@@ -214,8 +214,8 @@ for epochL in range(1,num_epochs,step_epoch):
 
     #print(previousmodelpath,previousmodelloaded)
 
-    modelname = 'Model_'+method+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pth'
-    historyname = 'History_'+method+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pkl'
+    modelname = method+'_Model_'+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pth'
+    historyname = method+'_History_'+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pkl'
     #print('--- training for',modelname,"\n",historyname)
 
     modelpath = savepath+modelname
@@ -223,7 +223,7 @@ for epochL in range(1,num_epochs,step_epoch):
 
     print('--- initiating training for',modelname)
     
-    if (os.path.isfile(modelpath) == True):
+    if (os.path.isdir(modelpath) == True):
         print('---',modelname," exists, skipping ---!")
         previousmodelpath=modelpath
         continue
