@@ -5,7 +5,7 @@
 
 print("--- parameter choices")
 
-myseed= 111111
+myseed= 1080
 width= 100
 nimages= 500
 
@@ -24,8 +24,9 @@ mywd= 1e-6
 dataname='JPG-C2-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
 #dataname='Pet-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
 #dataname='L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
-datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
-#datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
+
+#datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
+datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
 print(dataname,"\n",datapath)
 
 method='Keras-Resnet50-'+str(myseed)#+'-e'+str(num_epochs) #+'-bs'+str(batch_size)
@@ -252,6 +253,7 @@ for epochL in range(1,num_epochs,step_epoch):
     model.save(modelpath) 
     previousmodelpath=modelpath
     previousmodelname=modelname
+    previousmodelloaded=True
     
     import pickle 
     f=open(historypath,"wb")
