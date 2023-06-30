@@ -5,9 +5,9 @@
 
 print("--- parameter choices")
 
-myseed= 1080
+myseed= 1081
 width= 100
-nimages= 100
+nimages= 5000
 
 img_sizeX= 100; batch_size= 128
 #img_sizeX= 500; batch_size= 12
@@ -15,7 +15,7 @@ img_sizeX= 100; batch_size= 128
 img_sizeY= img_sizeX
 
 num_epochs= 500
-step_epoch= 2
+step_epoch= 10
 validation_split= 0.1
 
 mylr= 0.0001
