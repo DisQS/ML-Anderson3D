@@ -25,8 +25,8 @@ mywd= 1e-6
 #dataname='Pet-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
 dataname='L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
 
-datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
-#datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
+#datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
+datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
 
 print(dataname,"\n",datapath)
 
@@ -43,7 +43,7 @@ except FileExistsError:
 print(savepath)
 previousmodelpath='EMPTY'
 previousmodelname='EMPTY'
-save_train_loss= []
+save_train_loss= save_train_accuracy= save_valid_loss= save_valid_accuracy= []
 
 print("--- initializations")
 
@@ -55,6 +55,7 @@ print("--- initializations")
 print("--- standard libraries")
 
 import numpy as np
+import pickle 
 import sys
 np.set_printoptions(threshold=sys.maxsize)
 
@@ -237,6 +238,7 @@ for epochL in range(1,num_epochs,step_epoch):
     if (os.path.isdir(modelpath) == True):
         print('---',modelname," exists, skipping ---!")
         previousmodelpath=modelpath
+        previoushistorypath=historypath
         continue
     else:
         print('---',modelname,"does not yet exist --- needs training!")
@@ -247,6 +249,16 @@ for epochL in range(1,num_epochs,step_epoch):
             print('--- found', previousmodelpath, '--- loading!')
             model=load_model(previousmodelpath)
             previousmodelloaded= True
+            
+            # loading the history as well
+            histfile=open(previoushistorypath,'rb')
+            previous_history=pickle.load(histfile)
+            save_train_loss= previous_history[0]
+            save_train_accuracy= previous_history[1]
+            save_valid_loss= previous_history[2]
+            save_valid_accuracy= previous_history[3]
+            histfile.close()
+
         else:
             print('--- previous model is ',previousmodelpath,", needs fresh restart!")
 
@@ -267,22 +279,17 @@ for epochL in range(1,num_epochs,step_epoch):
     previousmodelname=modelname
     previousmodelloaded=True
 
-    import pickle 
-    f=open(historypath,"wb")
-    pickle.dump(history.history,f)
-    f.close()
+    save_train_loss= save_train_loss + history.history['loss']
+    save_valid_loss= save_valid_loss + history.history['val_loss']
+    save_train_accuracy= save_train_accuracy + history.history['accuracy']
+    save_valid_accuracy= save_valid_accuracy + history.history['val_accuracy']
 
-    train_loss= history.history['loss']
-    valid_loss= history.history['val_loss']
-    train_accuracy= history.history['accuracy']
-    valid_accuracy= history.history['val_accuracy']
+    save_history=[save_train_loss,save_train_accuracy,save_valid_loss,save_valid_accuracy]
 
-    save_train_loss= save_train_loss + train_loss
+    histfile=open(historypath,"wb")
+    pickle.dump(save_history,histfile)
+    histfile.close()
 
-    print('<><><> stl=', save_train_loss)
-    
-    print("--- testing the quality of the learned model")
-    
     #history = load_model(modelpath)
     
     print("--- training history")
@@ -291,6 +298,8 @@ for epochL in range(1,num_epochs,step_epoch):
     
     # evaluate model
     score=model.evaluate(validation_set,verbose=1)
+    
+    print("--- testing the quality of the learned model")
     
     # print performance
     print()
@@ -303,8 +312,10 @@ for epochL in range(1,num_epochs,step_epoch):
 
     # summarize history for accuracy
     fig=plt.figure()
-    plt.plot(history.history['accuracy'])
-    plt.plot(history.history['val_accuracy'])
+    #plt.plot(history.history['accuracy'])
+    #plt.plot(history.history['val_accuracy'])
+    plt.plot(save_train_accuracy)
+    plt.plot(save_valid_accuracy)
     plt.ylabel('model accuracy')
     plt.xlabel('epoch')
     plt.legend(['train', 'validation'], loc='best')
@@ -315,8 +326,10 @@ for epochL in range(1,num_epochs,step_epoch):
     
     # summarize history for loss
     fig=plt.figure()
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
+    #plt.plot(history.history['loss'])
+    #plt.plot(history.history['val_loss'])
+    plt.plot(save_train_loss)
+    plt.plot(save_valid_loss)
     plt.ylabel('model loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'validation'], loc='best')
