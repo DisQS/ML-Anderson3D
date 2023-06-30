@@ -7,15 +7,17 @@ print("--- parameter choices")
 
 myseed= 1080
 width= 100
-nimages= 100
+nimages= 500
 
 img_sizeX= 100; batch_size= 128
 #img_sizeX= 500; batch_size= 12
 
 img_sizeY= img_sizeX
 
-num_epochs= 500
-step_epoch= 2
+num_epochs= 100
+step_epoch= 10
+nprint= 5
+
 validation_split= 0.1
 
 mylr= 0.0001
@@ -25,8 +27,8 @@ mywd= 1e-6
 #dataname='Pet-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
 dataname='L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
 
-datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
-#datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
+#datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
+datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
 
 print(dataname,"\n",datapath)
 
@@ -43,7 +45,6 @@ except FileExistsError:
 print(savepath)
 previousmodelpath='EMPTY'
 previousmodelname='EMPTY'
-save_train_loss= []
 
 print("--- initializations")
 
@@ -195,7 +196,7 @@ print('    CNN architecture (ResNet50) created successfully!')
 print("--- Choosing the optimizer and the cost function")
 
 #opt = optimizers.SGD(lr=mylr, decay=mywd)
-opt = tf.keras.optimizers.Adam(learning_rate=mylr, decay=mywd)
+opt = tf.keras.optimizers.Adam(lr=mylr, decay=mywd)
 
 def compile_model(optimizer=opt):
     # create the mode
@@ -252,13 +253,45 @@ for epochL in range(1,num_epochs,step_epoch):
 
     # train DNN and store training info in history
     print('--- starting the training')
-    history = model.fit_generator(training_set,
-                                  steps_per_epoch = training_set.samples // batch_size,
-                                  epochs = step_epoch,
-                                  validation_data = validation_set,
-                                  validation_steps = validation_set.samples // batch_size)
 
-    # tf.keras.models.save_model(history,'Anderson_Ohtsuki_model_L20_500_keras_SGD_0_01_good_input_size.h5') 
+    for epochS in range(1,step_epoch):
+
+        iepoch= epochL+epochS
+        
+        history = model.fit_generator(training_set,
+                                      steps_per_epoch = training_set.samples // batch_size,
+                                      epochs = 1,
+                                      validation_data = validation_set,
+                                      validation_steps = validation_set.samples // batch_size)
+
+        # tf.keras.models.save_model(history,'Anderson_Ohtsuki_model_L20_500_keras_SGD_0_01_good_input_size.h5')
+
+        if ( iepoch // nprint == 0 ):
+            print("--> confusion matrix")
+    
+            validation_set.reset()
+            label=validation_set.class_indices.keys()
+            
+            #Confusion Matrix 
+            Y_pred = model.predict_generator(
+                validation_set, num_of_valid_samples // batch_size+1, verbose=1)
+            y_pred = np.argmax(Y_pred, axis=1)
+            
+            #basic confusion matrix
+            cfm=confusion_matrix(validation_set.classes, y_pred)
+            print(cfm)
+            
+            #print(os.getcwd())
+            #os.chdir('../../../../PyCode/')
+            #sys.path.insert(0,'../../../../PyCode/')
+            from plot_confusion_matrix import *
+            
+            print(plot_confusion_matrix(confusion_matrix(validation_set.classes, y_pred),
+                                        label,savepath+'/'+method+'_e'+str(epochL+step_epoch-1)+
+                                        '_'+dataname+'_cfm'+'.png',
+                                        title='Confusion matrix for '+dataname,
+                                        cmap=None,
+                                        normalize=True))
 
     print('--- saving the current state to',modelpath)
 
@@ -269,25 +302,12 @@ for epochL in range(1,num_epochs,step_epoch):
 
     import pickle 
     f=open(historypath,"wb")
-    pickle.dump(history.history,f)
+    pickle.dump(history,f)
     f.close()
-
-    train_loss= history.history['loss']
-    valid_loss= history.history['val_loss']
-    train_accuracy= history.history['accuracy']
-    valid_accuracy= history.history['val_accuracy']
-
-    save_train_loss= save_train_loss + train_loss
-
-    print('<><><> stl=', save_train_loss)
     
     print("--- testing the quality of the learned model")
     
-    #history = load_model(modelpath)
-    
     print("--- training history")
-
-    #print(history.history)
     
     # evaluate model
     score=model.evaluate(validation_set,verbose=1)
@@ -325,29 +345,4 @@ for epochL in range(1,num_epochs,step_epoch):
     plt.close()
     fig.savefig(savepath+'/'+method+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'_loss'+'.png')
     
-    print("--> confusion matrix")
-    
-    validation_set.reset()
-    label=validation_set.class_indices.keys()
-    
-    #Confusion Matrix 
-    Y_pred = model.predict_generator(
-        validation_set, num_of_valid_samples // batch_size+1, verbose=1)
-    y_pred = np.argmax(Y_pred, axis=1)
-    
-    #basic confusion matrix
-    cfm=confusion_matrix(validation_set.classes, y_pred)
-    print(cfm)
-    
-    #print(os.getcwd())
-    #os.chdir('../../../../PyCode/')
-    #sys.path.insert(0,'../../../../PyCode/')
-    from plot_confusion_matrix import *
-    
-    print(plot_confusion_matrix(confusion_matrix(validation_set.classes, y_pred),
-                                label,savepath+'/'+method+'_e'+str(epochL+step_epoch-1)+
-                                '_'+dataname+'_cfm'+'.png',
-                                title='Confusion matrix for '+dataname,
-                                cmap=None,
-                                normalize=True))
     
