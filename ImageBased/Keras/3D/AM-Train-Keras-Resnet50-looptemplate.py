@@ -7,15 +7,15 @@ print("--- parameter choices")
 
 myseed= 4000
 width= 100
-nimages= 500
+nimages= 100
 
 img_sizeX= 100; batch_size= 128
 #img_sizeX= 500; batch_size= 12
 
 img_sizeY= img_sizeX
 
-num_epochs= 50
-step_epoch= 10
+num_epochs= 500
+step_epoch= 2
 validation_split= 0.1
 
 mylr= 0.0001
@@ -42,6 +42,7 @@ except FileExistsError:
 print(savepath)
 previousmodelpath='EMPTY'
 previousmodelname='EMPTY'
+save_train_loss= []
 
 print("--- initializations")
 
@@ -193,7 +194,7 @@ print('    CNN architecture (ResNet50) created successfully!')
 print("--- Choosing the optimizer and the cost function")
 
 #opt = optimizers.SGD(lr=mylr, decay=mywd)
-opt = tf.keras.optimizers.Adam(lr=mylr, decay=mywd)
+opt = tf.keras.optimizers.Adam(learning_rate=mylr, decay=mywd)
 
 def compile_model(optimizer=opt):
     # create the mode
@@ -267,14 +268,25 @@ for epochL in range(1,num_epochs,step_epoch):
 
     import pickle 
     f=open(historypath,"wb")
-    pickle.dump(history,f)
+    pickle.dump(history.history,f)
     f.close()
+
+    train_loss= history.history['loss']
+    valid_loss= history.history['val_loss']
+    train_accuracy= history.history['accuracy']
+    valid_accuracy= history.history['val_accuracy']
+
+    save_train_loss= save_train_loss + train_loss
+
+    print('<><><> stl=', save_train_loss)
     
     print("--- testing the quality of the learned model")
     
     #history = load_model(modelpath)
     
     print("--- training history")
+
+    #print(history.history)
     
     # evaluate model
     score=model.evaluate(validation_set,verbose=1)
