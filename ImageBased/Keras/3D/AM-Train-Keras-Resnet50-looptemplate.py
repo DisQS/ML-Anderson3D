@@ -5,7 +5,7 @@
 
 print("--- parameter choices")
 
-myseed= 4200
+myseed= 1081
 width= 100
 nimages= 5000
 
