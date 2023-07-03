@@ -265,13 +265,14 @@ for epochL in range(1,num_epochs,step_epoch):
 
     # train DNN and store training info in history
     print('--- starting the training')
-    history = model.fit_generator(training_set,
+    history = model.fit(training_set,
                                   steps_per_epoch = training_set.samples // batch_size,
                                   epochs = step_epoch,
                                   validation_data = validation_set,
                                   validation_steps = validation_set.samples // batch_size)
 
     print(history.history.keys())
+    print(history.history)
     
     print('--- saving the current state to',modelpath)
 
