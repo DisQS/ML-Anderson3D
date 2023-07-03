@@ -5,17 +5,17 @@
 
 print("--- parameter choices")
 
-myseed= 1080
+myseed= 4200
 width= 100
-nimages= 100
+nimages= 5000
 
-img_sizeX= 100; batch_size= 128
-#img_sizeX= 500; batch_size= 12
+#img_sizeX= 200; batch_size= 128
+img_sizeX= 500; batch_size= 16
 
 img_sizeY= img_sizeX
 
 num_epochs= 500
-step_epoch= 2
+step_epoch= 10
 validation_split= 0.1
 
 mylr= 0.0001
@@ -25,8 +25,8 @@ mywd= 1e-6
 #dataname='Pet-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
 dataname='L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
 
-#datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
-datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
+datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
+#datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
 
 print(dataname,"\n",datapath)
 
