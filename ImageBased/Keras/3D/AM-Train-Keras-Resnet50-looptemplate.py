@@ -5,17 +5,18 @@
 
 print("--- parameter choices")
 
-myseed= 1081
+myseed= 1082
 width= 100
-nimages= 5000
+nimages= 100
 
+img_sizeX= 100; batch_size= 512
 #img_sizeX= 200; batch_size= 128
-img_sizeX= 500; batch_size= 16
+#img_sizeX= 500; batch_size= 16
 
 img_sizeY= img_sizeX
 
 num_epochs= 500
-step_epoch= 10
+step_epoch= 2
 validation_split= 0.1
 
 mylr= 0.0001
@@ -227,7 +228,7 @@ for epochL in range(1,num_epochs,step_epoch):
     #print(previousmodelpath,previousmodelloaded)
 
     modelname = method+'_model'+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pth'
-    historyname = method+'_history'+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pkl'
+    historyname = method+'_history'+'_e'+str(epochL+step_epoch-1)+'_'+dataname
     #print('--- training for',modelname,"\n",historyname)
 
     modelpath = savepath+modelname
@@ -251,7 +252,7 @@ for epochL in range(1,num_epochs,step_epoch):
             previousmodelloaded= True
             
             # loading the history as well
-            histfile=open(previoushistorypath,'rb')
+            histfile=open(previoushistorypath+'.pkl','rb')
             previous_history=pickle.load(histfile)
             save_train_loss= previous_history[0]
             save_train_accuracy= previous_history[1]
@@ -270,8 +271,8 @@ for epochL in range(1,num_epochs,step_epoch):
                                   validation_data = validation_set,
                                   validation_steps = validation_set.samples // batch_size)
 
-    # tf.keras.models.save_model(history,'Anderson_Ohtsuki_model_L20_500_keras_SGD_0_01_good_input_size.h5') 
-
+    print(history.history.keys())
+    
     print('--- saving the current state to',modelpath)
 
     model.save(modelpath) 
@@ -279,17 +280,29 @@ for epochL in range(1,num_epochs,step_epoch):
     previousmodelname=modelname
     previousmodelloaded=True
 
+    save_epoch= list(range(1,epochL+step_epoch,1))
+    #print(save_epoch)
     save_train_loss= save_train_loss + history.history['loss']
-    save_valid_loss= save_valid_loss + history.history['val_loss']
+    #save_valid_loss= save_valid_loss + history.history['val_loss']
+    save_valid_loss= save_train_loss
     save_train_accuracy= save_train_accuracy + history.history['accuracy']
-    save_valid_accuracy= save_valid_accuracy + history.history['val_accuracy']
+    #save_valid_accuracy= save_valid_accuracy + history.history['val_accuracy']
+    save_valid_accuracy= save_train_accuracy
 
     save_history=[save_train_loss,save_train_accuracy,save_valid_loss,save_valid_accuracy]
-
-    histfile=open(historypath,"wb")
+    #print(save_history)
+    histfile=open(historypath+'.pkl',"wb")
     pickle.dump(save_history,histfile)
     histfile.close()
 
+    save_history=[save_epoch,save_train_loss,save_train_accuracy,save_valid_loss,save_valid_accuracy]
+    histfile=open(historypath+'.txt',"wb")
+    header = '{0:^5s}   {1:^7s}    {2:^5s}   {3:^8s}   {4:^7s}'.format('epochs', 'loss',
+        'accuracy','valid loss','valid accuracy')
+    np.savetxt(histfile, np.array(save_history).T.tolist(), header=header,
+               fmt=['%8.d','   %4.7f','%8.7f',' %8.7f','%12.7f'])
+    histfile.close()
+    
     #history = load_model(modelpath)
     
     print("--- training history")
@@ -352,7 +365,7 @@ for epochL in range(1,num_epochs,step_epoch):
     plt.title(dataname)
     #plt.show()
     plt.close()
-    fig.savefig(savepath+'/'+method+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'_accloss'+'.png')
+    fig.savefig(savepath+'/'+method+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'_acc+loss'+'.png')
     
     print("--> confusion matrix")
     
