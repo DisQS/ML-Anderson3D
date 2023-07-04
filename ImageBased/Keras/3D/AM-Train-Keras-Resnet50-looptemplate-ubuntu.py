@@ -5,13 +5,12 @@
 
 print("--- parameter choices")
 
-myseed= 1082
+myseed= 1081
 width= 100
-nimages= 100
+nimages= 5000
 
 img_sizeX= 100; batch_size= 128
-#img_sizeX= 200; batch_size= 128
-#img_sizeX= 500; batch_size= 16
+#img_sizeX= 500; batch_size= 12
 
 img_sizeY= img_sizeX
 
@@ -26,8 +25,8 @@ mywd= 1e-6
 #dataname='Pet-L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
 dataname='L'+str(width)+'-'+str(nimages)+'-s'+str(img_sizeX)
 
-datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
-#datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
+#datapath = '/storage/disqs/'+'ML-Anderson3D/Images/'+dataname # SC-RTP
+datapath = '/mnt/DataDrive/'+'ML-Anderson3D/Images/'+dataname # Ubuntu home RAR
 
 print(dataname,"\n",datapath)
 
@@ -151,13 +150,6 @@ num_of_train_samples = training_set.samples
 num_of_valid_samples = validation_set.samples
 num_classes = len(validation_set.class_indices)
 
-# check for model.fit() dropping val_loss/accuracy when batch_size too large
-# see https://stackoverflow.com/questions/55746382/why-val-loss-and-val-acc-are-not-displaying
-if ( num_of_valid_samples < batch_size ):
-    batch_size = num_of_valid_samples // 2
-    print('--- batch_size should be REDUCED to less than', num_of_valid_samples, ', apply manual restart!')
-    sys.exit()
-
 #print('--- Configure the dataset for performance')
 #AUTOTUNE = tf.data.AUTOTUNE
 #training_set = training_set.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
@@ -194,8 +186,7 @@ def create_CNN():
     # instantiate model
     model= Sequential([
         resnet,Flatten(),
-#        Dense(num_classes, activation='sigmoid'),
-        Dense(num_classes, activation='softmax'),
+        Dense(num_classes, activation='sigmoid'),
     ])
     
     return model
@@ -236,7 +227,7 @@ for epochL in range(1,num_epochs,step_epoch):
     #print(previousmodelpath,previousmodelloaded)
 
     modelname = method+'_model'+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pth'
-    historyname = method+'_history'+'_e'+str(epochL+step_epoch-1)+'_'+dataname
+    historyname = method+'_history'+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'.pkl'
     #print('--- training for',modelname,"\n",historyname)
 
     modelpath = savepath+modelname
@@ -260,12 +251,12 @@ for epochL in range(1,num_epochs,step_epoch):
             previousmodelloaded= True
             
             # loading the history as well
-            histfile=open(previoushistorypath+'.pkl','rb')
+            histfile=open(previoushistorypath,'rb')
             previous_history=pickle.load(histfile)
-            save_train_loss= previous_history[1]
-            save_train_accuracy= previous_history[2]
-            save_valid_loss= previous_history[3]
-            save_valid_accuracy= previous_history[4]
+            save_train_loss= previous_history[0]
+            save_train_accuracy= previous_history[1]
+            save_valid_loss= previous_history[2]
+            save_valid_accuracy= previous_history[3]
             histfile.close()
 
         else:
@@ -273,17 +264,14 @@ for epochL in range(1,num_epochs,step_epoch):
 
     # train DNN and store training info in history
     print('--- starting the training')
-    hist= model.fit(training_set,
-                    steps_per_epoch = training_set.samples // batch_size,
-                    validation_data = validation_set,
-                    validation_steps = validation_set.samples // batch_size,
-                    #verbose = 2,
-                    epochs = step_epoch) # original approach
-                    #epochs = epochL-1+step_epoch, initial_epoch = epochL-1)
+    history = model.fit_generator(training_set,
+                                  steps_per_epoch = training_set.samples // batch_size,
+                                  epochs = step_epoch,
+                                  validation_data = validation_set,
+                                  validation_steps = validation_set.samples // batch_size)
 
-    #print(hist.history.keys())
-    #print(hist.history)
-    
+    # tf.keras.models.save_model(history,'Anderson_Ohtsuki_model_L20_500_keras_SGD_0_01_good_input_size.h5') 
+
     print('--- saving the current state to',modelpath)
 
     model.save(modelpath) 
@@ -291,34 +279,22 @@ for epochL in range(1,num_epochs,step_epoch):
     previousmodelname=modelname
     previousmodelloaded=True
 
-    save_epoch= list(range(1,epochL+step_epoch,1))
-    #print(save_epoch)
-    save_train_loss= save_train_loss + hist.history['loss']
-    save_valid_loss= save_valid_loss + hist.history['val_loss']
-    #save_valid_loss= save_train_loss
-    save_train_accuracy= save_train_accuracy + hist.history['accuracy']
-    save_valid_accuracy= save_valid_accuracy + hist.history['val_accuracy']
-    #save_valid_accuracy= save_train_accuracy
+    save_train_loss= save_train_loss + history.history['loss']
+    save_valid_loss= save_valid_loss + history.history['val_loss']
+    save_train_accuracy= save_train_accuracy + history.history['accuracy']
+    save_valid_accuracy= save_valid_accuracy + history.history['val_accuracy']
 
-    save_history=[save_epoch,save_train_loss,save_train_accuracy,save_valid_loss,save_valid_accuracy]
-    #print(save_history)
-    histfile=open(historypath+'.pkl',"wb")
+    save_history=[save_train_loss,save_train_accuracy,save_valid_loss,save_valid_accuracy]
+
+    histfile=open(historypath,"wb")
     pickle.dump(save_history,histfile)
     histfile.close()
 
-    #save_history=[save_epoch,save_train_loss,save_train_accuracy,save_valid_loss,save_valid_accuracy]
-    histfile=open(historypath+'.txt',"wb")
-    header = '{0:^5s}   {1:^7s}    {2:^5s}   {3:^8s}   {4:^7s}'.format('epochs', 'loss',
-        'accuracy','valid loss','valid accuracy')
-    np.savetxt(histfile, np.array(save_history).T.tolist(), header=header,
-               fmt=['%8.d','   %4.7f','%8.7f',' %8.7f','%12.7f'])
-    histfile.close()
-    
     #history = load_model(modelpath)
     
     print("--- training history")
 
-    #print(hist.history)
+    #print(history.history)
     
     # evaluate model
     score=model.evaluate(validation_set,verbose=1)
@@ -336,8 +312,8 @@ for epochL in range(1,num_epochs,step_epoch):
 
     # summarize history for accuracy
     fig=plt.figure()
-    #plt.plot(hist.history['accuracy'])
-    #plt.plot(hist.history['val_accuracy'])
+    #plt.plot(history.history['accuracy'])
+    #plt.plot(history.history['val_accuracy'])
     plt.plot(save_train_accuracy)
     plt.plot(save_valid_accuracy)
     plt.ylabel('model accuracy')
@@ -350,8 +326,8 @@ for epochL in range(1,num_epochs,step_epoch):
     
     # summarize history for loss
     fig=plt.figure()
-    #plt.plot(hist.history['loss'])
-    #plt.plot(hist.history['val_loss'])
+    #plt.plot(history.history['loss'])
+    #plt.plot(history.history['val_loss'])
     plt.plot(save_train_loss)
     plt.plot(save_valid_loss)
     plt.ylabel('model loss')
@@ -364,8 +340,8 @@ for epochL in range(1,num_epochs,step_epoch):
     
     # summarize history for loss + accuracy
     fig=plt.figure()
-    #plt.plot(hist.history['loss'])
-    #plt.plot(hist.history['val_loss'])
+    #plt.plot(history.history['loss'])
+    #plt.plot(history.history['val_loss'])
     plt.plot(save_train_loss)
     plt.plot(save_valid_loss)
     plt.plot(save_train_accuracy)
@@ -376,7 +352,7 @@ for epochL in range(1,num_epochs,step_epoch):
     plt.title(dataname)
     #plt.show()
     plt.close()
-    fig.savefig(savepath+'/'+method+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'_acc+loss'+'.png')
+    fig.savefig(savepath+'/'+method+'_e'+str(epochL+step_epoch-1)+'_'+dataname+'_accloss'+'.png')
     
     print("--> confusion matrix")
     
