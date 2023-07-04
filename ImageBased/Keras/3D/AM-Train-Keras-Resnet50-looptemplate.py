@@ -262,10 +262,10 @@ for epochL in range(1,num_epochs,step_epoch):
             # loading the history as well
             histfile=open(previoushistorypath+'.pkl','rb')
             previous_history=pickle.load(histfile)
-            save_train_loss= previous_history[0]
-            save_train_accuracy= previous_history[1]
-            save_valid_loss= previous_history[2]
-            save_valid_accuracy= previous_history[3]
+            save_train_loss= previous_history[1]
+            save_train_accuracy= previous_history[2]
+            save_valid_loss= previous_history[3]
+            save_valid_accuracy= previous_history[4]
             histfile.close()
 
         else:
@@ -300,13 +300,13 @@ for epochL in range(1,num_epochs,step_epoch):
     save_valid_accuracy= save_valid_accuracy + hist.history['val_accuracy']
     #save_valid_accuracy= save_train_accuracy
 
-    save_history=[save_train_loss,save_train_accuracy,save_valid_loss,save_valid_accuracy]
+    save_history=[save_epoch,save_train_loss,save_train_accuracy,save_valid_loss,save_valid_accuracy]
     #print(save_history)
     histfile=open(historypath+'.pkl',"wb")
     pickle.dump(save_history,histfile)
     histfile.close()
 
-    save_history=[save_epoch,save_train_loss,save_train_accuracy,save_valid_loss,save_valid_accuracy]
+    #save_history=[save_epoch,save_train_loss,save_train_accuracy,save_valid_loss,save_valid_accuracy]
     histfile=open(historypath+'.txt',"wb")
     header = '{0:^5s}   {1:^7s}    {2:^5s}   {3:^8s}   {4:^7s}'.format('epochs', 'loss',
         'accuracy','valid loss','valid accuracy')
