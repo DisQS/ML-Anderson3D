@@ -9,14 +9,14 @@ myseed= 1082
 width= 100
 nimages= 100
 
-img_sizeX= 100; batch_size= 512
+img_sizeX= 100; batch_size= 128
 #img_sizeX= 200; batch_size= 128
 #img_sizeX= 500; batch_size= 16
 
 img_sizeY= img_sizeX
 
 num_epochs= 500
-step_epoch= 2
+step_epoch= 10
 validation_split= 0.1
 
 mylr= 0.0001
@@ -151,6 +151,13 @@ num_of_train_samples = training_set.samples
 num_of_valid_samples = validation_set.samples
 num_classes = len(validation_set.class_indices)
 
+# check for model.fit() dropping val_loss/accuracy when batch_size too large
+# see https://stackoverflow.com/questions/55746382/why-val-loss-and-val-acc-are-not-displaying
+if ( num_of_valid_samples < batch_size ):
+    batch_size = num_of_valid_samples // 2
+    print('--- batch_size should be REDUCED to less than', num_of_valid_samples, ', apply manual restart!')
+    sys.exit()
+
 #print('--- Configure the dataset for performance')
 #AUTOTUNE = tf.data.AUTOTUNE
 #training_set = training_set.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
@@ -187,7 +194,8 @@ def create_CNN():
     # instantiate model
     model= Sequential([
         resnet,Flatten(),
-        Dense(num_classes, activation='sigmoid'),
+#        Dense(num_classes, activation='sigmoid'),
+        Dense(num_classes, activation='softmax'),
     ])
     
     return model
@@ -265,14 +273,16 @@ for epochL in range(1,num_epochs,step_epoch):
 
     # train DNN and store training info in history
     print('--- starting the training')
-    history = model.fit(training_set,
-                                  steps_per_epoch = training_set.samples // batch_size,
-                                  epochs = step_epoch,
-                                  validation_data = validation_set,
-                                  validation_steps = validation_set.samples // batch_size)
+    hist= model.fit(training_set,
+                    steps_per_epoch = training_set.samples // batch_size,
+                    validation_data = validation_set,
+                    validation_steps = validation_set.samples // batch_size,
+                    #verbose = 2,
+                    epochs = step_epoch) # original approach
+                    #epochs = epochL-1+step_epoch, initial_epoch = epochL-1)
 
-    print(history.history.keys())
-    print(history.history)
+    #print(hist.history.keys())
+    #print(hist.history)
     
     print('--- saving the current state to',modelpath)
 
@@ -283,12 +293,12 @@ for epochL in range(1,num_epochs,step_epoch):
 
     save_epoch= list(range(1,epochL+step_epoch,1))
     #print(save_epoch)
-    save_train_loss= save_train_loss + history.history['loss']
-    #save_valid_loss= save_valid_loss + history.history['val_loss']
-    save_valid_loss= save_train_loss
-    save_train_accuracy= save_train_accuracy + history.history['accuracy']
-    #save_valid_accuracy= save_valid_accuracy + history.history['val_accuracy']
-    save_valid_accuracy= save_train_accuracy
+    save_train_loss= save_train_loss + hist.history['loss']
+    save_valid_loss= save_valid_loss + hist.history['val_loss']
+    #save_valid_loss= save_train_loss
+    save_train_accuracy= save_train_accuracy + hist.history['accuracy']
+    save_valid_accuracy= save_valid_accuracy + hist.history['val_accuracy']
+    #save_valid_accuracy= save_train_accuracy
 
     save_history=[save_train_loss,save_train_accuracy,save_valid_loss,save_valid_accuracy]
     #print(save_history)
@@ -308,7 +318,7 @@ for epochL in range(1,num_epochs,step_epoch):
     
     print("--- training history")
 
-    #print(history.history)
+    #print(hist.history)
     
     # evaluate model
     score=model.evaluate(validation_set,verbose=1)
@@ -326,8 +336,8 @@ for epochL in range(1,num_epochs,step_epoch):
 
     # summarize history for accuracy
     fig=plt.figure()
-    #plt.plot(history.history['accuracy'])
-    #plt.plot(history.history['val_accuracy'])
+    #plt.plot(hist.history['accuracy'])
+    #plt.plot(hist.history['val_accuracy'])
     plt.plot(save_train_accuracy)
     plt.plot(save_valid_accuracy)
     plt.ylabel('model accuracy')
@@ -340,8 +350,8 @@ for epochL in range(1,num_epochs,step_epoch):
     
     # summarize history for loss
     fig=plt.figure()
-    #plt.plot(history.history['loss'])
-    #plt.plot(history.history['val_loss'])
+    #plt.plot(hist.history['loss'])
+    #plt.plot(hist.history['val_loss'])
     plt.plot(save_train_loss)
     plt.plot(save_valid_loss)
     plt.ylabel('model loss')
@@ -354,8 +364,8 @@ for epochL in range(1,num_epochs,step_epoch):
     
     # summarize history for loss + accuracy
     fig=plt.figure()
-    #plt.plot(history.history['loss'])
-    #plt.plot(history.history['val_loss'])
+    #plt.plot(hist.history['loss'])
+    #plt.plot(hist.history['val_loss'])
     plt.plot(save_train_loss)
     plt.plot(save_valid_loss)
     plt.plot(save_train_accuracy)
