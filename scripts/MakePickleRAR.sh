@@ -22,18 +22,20 @@ pwd
 
 for Wdir in A3*
 do
+    echo '>  START with' $rawdir/$Wdir
+    
     if [ ! -d $pkldir\$Wdir ]; then
-        echo "--- making "$pkldir/$Wdir
+        echo ">-- making "$pkldir/$Wdir
         mkdir -p $pkldir/$Wdir
     else
-        echo "--- cd "$pkldir/$Wdir
+        echo ">-- cd "$pkldir/$Wdir
         #cd $pkldir"/"$pkl_folder$Wdir
     fi
 
     jobfile=MakePickle-`basename $rawdir`".sh"
     pyscript=MakePickle-`basename $rawdir`".py"
 
-    echo "--- creating "$jobfile + $pyscript "in "$pkldir/$Wdir
+    echo ">-- creating "$jobfile + $pyscript "in "$pkldir/$Wdir
 
 cat > $pkldir/$Wdir/${pyscript} << EOD
 #!/usr/bin/python3
@@ -50,7 +52,7 @@ basename = os.path.basename(str(sys.argv[3]))
 #print('bn:', basename)
 
 filename, file_extension = os.path.splitext(basename)
-print('>-- creation of file',filename+'.pkl')
+print('--> creation of file',filename+'.pkl')
 
 raw_path=str(sys.argv[1])+filepath[1:]+'/'+filename+'.raw'
 pkl_path=str(sys.argv[2])+'/'+filename+'.pkl'
@@ -83,16 +85,18 @@ module load Python/3.9.6
 
 #conda init --all; conda activate
 
-echo "--> working in Wdir=$rawdir/$Wdir"
+echo "->- working in Wdir=$rawdir/$Wdir"
 
 cd $rawdir/$Wdir
-pwd
+#echo '->- working in '`pwd`
 rm -f raw.lst
 
-for rawfile in \`find . -name \Evec*.raw | head -$nb_sample\`
+for rawfile in \`find . -name \Evec*.raw | sort | head -$nb_sample\`
 do
-    if [ ! -f \`basename \$rawfile .raw\`.pkl ]; then
-	echo \$rawfile "needs .pkl file"
+    #echo $pkldir/$Wdir/\`basename \$rawfile .raw\`.pkl
+    #echo \`dirname \$rawfile\`
+    if [ ! -f $pkldir/$Wdir/\`basename \$rawfile .raw\`.pkl ]; then
+	echo '->-' \$rawfile "needs .pkl file"
         #echo "file" \`basename \$rawfile .raw\`.pkl  "does not exist" 
 	echo \$rawfile >> raw.lst
     fi
@@ -100,7 +104,11 @@ done
 
 pwd
 
-sort -R raw.lst | parallel -j$cores -a - python $pkldir/$Wdir/$pyscript $rawdir/$Wdir $pkldir/$Wdir {} 
+if [ -f raw.lst ]; then
+   sort -R raw.lst | parallel -j$cores -a - python $pkldir/$Wdir/$pyscript $rawdir/$Wdir $pkldir/$Wdir {}
+else
+   echo '->- all $nb_sample .raw files already converted into .pkl files --- skipping!'
+fi
 
 #if [ ! -f $rawdir/$raw_folder/$Wdir/raw.lst ]; then
 #    echo "all the files are already converted to pkl"
@@ -121,7 +129,7 @@ EOD
     chmod 755 $pkldir"/"$Wdir"/"${jobfile}
     chmod g+w $pkldir"/"$Wdir"/"${jobfile}
 
-    echo "--> starting the .sh file"
+    echo ">-- starting the .sh file"
     #(sbatch -q devel ${jobfile})
     #(sbatch -q taskfarm ${jobfile})
     #(sbatch ${jobfile})
