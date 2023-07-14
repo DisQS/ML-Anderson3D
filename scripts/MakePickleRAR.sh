@@ -107,7 +107,7 @@ pwd
 if [ -f raw.lst ]; then
    sort -R raw.lst | parallel -j$cores -a - python $pkldir/$Wdir/$pyscript $rawdir/$Wdir $pkldir/$Wdir {}
 else
-   echo '->- all $nb_sample .raw files already converted into .pkl files --- skipping!'
+   echo '->- all $nb_sample chosen .raw files already converted into .pkl files --- skipping!'
 fi
 
 #if [ ! -f $rawdir/$raw_folder/$Wdir/raw.lst ]; then
@@ -133,10 +133,10 @@ EOD
     #(sbatch -q devel ${jobfile})
     #(sbatch -q taskfarm ${jobfile})
     #(sbatch ${jobfile})
-    (${pkldir}"/"$pkl_folder$Wdir"/"${jobfile})
+    (${pkldir}/$Wdir/${jobfile})
     
 done
 
 cd $codedir
 
-$MAKEDISQS $pkldir"/"$pkl_folder
+$MAKEDISQS $pkldir
