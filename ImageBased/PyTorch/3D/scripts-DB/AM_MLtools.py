@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
+from PIL import Image
 import time
 import seaborn as sns
 from tqdm import tqdm, trange
@@ -116,8 +117,6 @@ class MyImageFolder(torchvision.datasets.DatasetFolder):
         class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
         return classes, class_to_idx
 
-
-
     def __getitem__(self, index):
         # this is what ImageFolder normally returns 
         original_tuple = super(MyImageFolder, self).__getitem__(index)
@@ -126,6 +125,12 @@ class MyImageFolder(torchvision.datasets.DatasetFolder):
         # make a new tuple that includes original and the path
         tuple_with_path = (original_tuple + (path,))
         return tuple_with_path
+############################################################################
+def pil_loader(input):
+    with open(input, "rb") as f:
+        img = Image.open(f)
+        img.load()
+    return img.convert("RGBA")
 #####################################################################################
 def raw_file_loader(input):
     #print(input)
@@ -143,6 +148,14 @@ def pkl_file_loader(input):
     size=int(((input.split('/')[-1]).split('-')[0]).split('Evec0')[1])
     functions=functions.reshape(size,size,size)
     functions=functions*functions
+    return functions
+#####################################################################################
+def pkl_file_loader_phi(input):
+    import pickle as pkl
+    from numpy import loadtxt
+    functions = pkl.load(open(input, 'rb'))
+    size=int(((input.split('/')[-1]).split('-')[0]).split('Evec0')[1])
+    functions=functions.reshape(size,size,size)
     return functions
 
 #####################################################################################

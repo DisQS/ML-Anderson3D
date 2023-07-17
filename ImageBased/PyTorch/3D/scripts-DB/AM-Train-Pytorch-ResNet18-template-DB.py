@@ -14,7 +14,7 @@ import time
 import random
 import seaborn as sns
 import sys
-#sys.path.insert(0, '/home/p/$USER/Anderson/AM_code')
+sys.path.insert(0, '/home/p/$USER/Anderson/AM_code')
 from AM_MLtools import *
 from tqdm import tqdm, trange
 import os
@@ -23,7 +23,7 @@ import re
 ##############################################################################
 print(sys.argv)
     
-if ( len(sys.argv) >= 9):
+if ( len(sys.argv) >= 10):
     #SEED = 101
     SEED = int(sys.argv[1])
     my_size= int(sys.argv[2])
@@ -33,7 +33,8 @@ if ( len(sys.argv) >= 9):
     my_batch_size=int(sys.argv[6])
     my_num_epochs= int(sys.argv[7])
     flag=int(sys.argv[8])
-    my_classes=['W15.0','W18.0']
+    mylr=float(sys.argv[9])
+    my_classes=[float(num) for num in sys.argv[10].split(',')]
 else:
     print ('Number of', len(sys.argv), \
            'arguments is less than expected (2) --- ABORTING!')
@@ -47,7 +48,7 @@ img_sizeX= my_img_size
 validation_split= my_validation_split
 batch_size=my_batch_size
 num_epochs= my_num_epochs
-subclasses=my_classes
+subclasses=['W'+str(element) for element in my_classes]
 nb_classes=len(subclasses)
 print('CLASSES',my_classes)
 print('###############')
@@ -55,7 +56,7 @@ print(subclasses)
 dataname='L'+str(width)+'-'+str(size_samp)+'-s'+str(img_sizeX)+'-'+str(nb_classes)+'-classes'
 data_dir='L'+str(width)+'-'+str(size_samp)+'-s'+str(img_sizeX)
 #datapath = '/storage/disqs/'+'ML-Anderson3D/EvecRaws/'+dataname # SC-RTP
-datapath = '/home/p/$USER/Anderson/Data/images/'+data_dir
+datapath = '/home/p/phrhmb/Anderson/Data/images/'+data_dir
 #print(os.listdir(datapath))
 print(dataname,"\n",datapath)
 
@@ -64,7 +65,7 @@ modelname = 'Model_'+method+'_'+dataname+'.pth'
 historyname = 'History_'+method+'_'+dataname+'.pkl'
 print(method,"\n",modelname,"\n",historyname)
 
-savepath = './'+dataname+'_Adam_1-4_'+str(batch_size)+'/'
+savepath = './'+dataname+'_Adam_'+str(mylr)+'_'+str(batch_size)+'/'
 
 try:
     os.mkdir(savepath)
@@ -101,7 +102,7 @@ print('chosen device: ',device)
 print(os.getcwd())
 
 print('--> reading CSV data')
-whole_dataset=MyImageFolder(root=datapath,loader = torchvision.datasets.folder.default_loader,extensions='.png',subclasses=subclasses,transform=torchvision.transforms.ToTensor())
+whole_dataset=MyImageFolder(root=datapath,loader = pil_loader,extensions='.png',subclasses=subclasses,transform=torchvision.transforms.ToTensor())
 
 print('--> defining/reading DATA')
 training_set=0
@@ -149,7 +150,8 @@ print('number of classes',number_classes )
 
 # ## building the CNN
 print('--> building the CNN')
-model=models.resnet18(pretrained=True, progress=True)
+model=models.resnet18()
+model.conv1 = nn.Conv2d(4, 64, kernel_size=7, stride=2, padding=3, bias=False)
 num_ftrs = model.fc.in_features # number of input features of the last layer which is fully connected (fc)
 
 #We modify the last layer in order to have 2 output: percolating or not
@@ -158,7 +160,7 @@ model.fc=nn.Linear(num_ftrs, number_classes )
 model = model.to(device)
 
 print('--> defining optimizer')
-optimizer=torch.optim.Adam(model.parameters(),lr=0.0001)
+optimizer=torch.optim.Adam(model.parameters(),lr=mylr)
 #optimizer=torch.optim.Adadelta(model.parameters(), lr=1.0, rho=0.9, eps=1e-06, weight_decay=0)
 # defining the loss function
 criterion = nn.CrossEntropyLoss()
