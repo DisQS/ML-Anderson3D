@@ -2,9 +2,9 @@
 getseed=${1:-"N"} #Set to Y if you what to reuse stored seed
 epochs=${2:-50} #No of epochs
 re=${3:-0} #Set restart point
-no=${4:-4000} #Number of smaples to take from each category
+no=${4:-5000} #Number of smaples to take from each category
 size=${5:-30} #System size used
-categories=${6:-"15,18"} #List of categories to use separated by ,
+#categories=${6:-"15,18"} #List of categories to use separated by ,
 
 echo $getseed $epochs $re $no $size $categories 
 
@@ -15,21 +15,21 @@ workdir=$(pwd)
 cd ../
 strdir=$(pwd)
 cd ../../
-numdir=$(pwd)/ND$size
+numdir=$(pwd)/O$size
 echo $numdir
 fdir=$strdir/NBs
 sdir=$strdir/scripts
-IFS=', ' read -r -a array <<< $categories
-classes=${#array[@]}
-mkdir -p $workdir/P$no-L$size-$classes
-workdir=$workdir/P$no-L$size-$classes
+#IFS=', ' read -r -a array <<< $categories
+#classes=${#array[@]}
+mkdir -p $workdir/OP$no-L$size
+workdir=$workdir/OP$no-L$size
 echo $numdir
 echo $workdir
 
 cd $workdir
 
-job=`printf "$fdir/Phase-N$no-L$size-$classes.sh"`
-py=`printf "$fdir/Phase-N$no-L$size-$classes.py"`
+job=`printf "$fdir/OPhase-N$no-L$size.sh"`
+py=`printf "$fdir/OPhase-N$no-L$size.py"`
 echo $py
 
 now=$(date +"%T")
@@ -45,7 +45,7 @@ cat > ${py} << EOD
 print("--> importing modules")
 import os, shutil, pathlib
 import torch
-print("--> torch version used = 1.7.1, version loaded = " + str(torch.__version__))
+print("--> torch version used = 1.9.0, version loaded = " + str(torch.__version__))
 
 import pandas as pd
 from torch import nn
@@ -79,28 +79,28 @@ class NeuralNetwork(nn.Module):
       super(NeuralNetwork, self).__init__()
       self.stack = nn.Sequential(
       nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(5,5,5), stride=1),
-      nn.ReLU(),
+      #nn.ReLU(),
       nn.Conv3d(in_channels=64, out_channels=64, kernel_size=(5,5,5), stride=1, padding=2),
-      nn.ReLU(),
+      #nn.ReLU(),
       nn.MaxPool3d(kernel_size=(2,2,2), stride=2),
       nn.Dropout3d(),
       nn.Conv3d(in_channels=64, out_channels=96, kernel_size=(3,3,3), stride=1),
-      nn.ReLU(),
+      #nn.ReLU(),
       nn.Conv3d(in_channels=96, out_channels=96, kernel_size=(3,3,3), stride=1, padding=1),
-      nn.ReLU(),
+      #nn.ReLU(),
       nn.MaxPool3d(kernel_size=(2,2,2), stride=2),
       nn.Dropout3d(),
       nn.Conv3d(in_channels=96, out_channels=128, kernel_size=(3,3,3), stride=1),
-      nn.ReLU(),
+      #nn.ReLU(),
       nn.Conv3d(in_channels=128, out_channels=128, kernel_size=(3,3,3), stride=1, padding=1),
-      nn.ReLU(),
+      #nn.ReLU(),
       nn.MaxPool3d(kernel_size=(2,2,2), stride=2),
       nn.Dropout3d(),
       nn.AdaptiveAvgPool3d(output_size=(1, 1, 1)),
       nn.Flatten(),
       nn.Linear(in_features=128,out_features=1024),
       nn.Dropout(),
-      nn.Linear(in_features=1024,out_features=len(c))
+      nn.Linear(in_features=1024,out_features=2)
       )
     def forward(self, x):
         logits = self.stack(x)
@@ -127,12 +127,8 @@ class CustomImageDataset(Dataset):
         return image, label
 
 print("--> defining categories")
-c = np.fromstring("$categories",dtype=float, sep=",")
+c = np.array(["Ext","Loc"])
 print(c)
-casez = []
-for i in range (0, len(c)):
-    casez = np.append(casez, "W"+str(c[i]))
-print(casez)
 print("--> categories have been defined. No. of categories used = " + str(len(c)))
 
 store="N$no-L$size"
@@ -163,9 +159,9 @@ if os.path.exists(f"{path}/labels"):
     shutil.rmtree(f"{path}/labels")
 os.mkdir(f"{path}/labels")
 
-for i in range(0,len(casez)):
-        csv_input = pd.read_csv(f'{path}/{casez[i]}/labels.csv')
-        if c[i] > 16.5:
+for i in range(0,len(c)):
+        csv_input = pd.read_csv(f'{path}/{c[i]}/labels.csv')
+        if i == 1:
                 csv_input.replace(to_replace=0,value=1,inplace = True)
         csv_input.to_csv(f'{path}/labels/labels{c[i]}.csv', index=False)
 
@@ -179,13 +175,13 @@ print("--> created labels file")
 print("--> creating datasets for usage for training, validation and testing")
 batch_size = 32
 ndata = $no
-for i in range(0,len(casez)):
+for i in range(0,len(c)):
     if i == 0:
-        data = CustomImageDataset(annotations_file=f"{path}/labels/labels{c[i]}.csv",img_dir=f"{path}/{casez[i]}")
+        data = CustomImageDataset(annotations_file=f"{path}/labels/labels{c[i]}.csv",img_dir=f"{path}/{c[i]}")
         print(len(data))
         training_data, validation_data, test_data = random_split(data,[int(ndata*0.8),int(ndata*0.15),int(ndata*0.05)])
     else:
-        data = CustomImageDataset(annotations_file=f"{path}/labels/labels{c[i]}.csv",img_dir=f"{path}/{casez[i]}")
+        data = CustomImageDataset(annotations_file=f"{path}/labels/labels{c[i]}.csv",img_dir=f"{path}/{c[i]}")
         train_set, validation_set, test_set = random_split(data,[int(ndata*0.8),int(ndata*0.15),int(ndata*0.05)]) 
         training_data = ConcatDataset([training_data,train_set])
         validation_data = ConcatDataset([validation_data,validation_set])
@@ -224,7 +220,7 @@ print("--> model defined for use")
 print(model)
 ################################
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters())
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 print(f"optimizer used: {optimizer}")
 
 epochs = $epochs - $re
@@ -242,6 +238,7 @@ print("--> beginning training")
 for e in range(epochs):
     st = time.time()
     train_loss = 0.0
+    train_acc = 0.0
     predict = []
     p = []
     model.train()     # Optional when not using Model Specific layer
@@ -260,18 +257,23 @@ for e in range(epochs):
         loss = loss_fn(target,labels)
         loss.backward()
         optimizer.step()
-        train_loss += loss.item() * data.size(0)
+        train_loss += loss.item()
+    train_acc += (predict == p).sum()
 
 
     #np.savetxt(f"$workdir/cm-target-C{len(c)}-D$size-{e+$re}.csv", t.detach().numpy(), delimiter=",")
     #np.savetxt(f"$workdir/cm-tlabels-C{len(c)}-D$size-{e+$re}.csv", l.detach().numpy(), delimiter=",")
     print("--> computing confusion matrix")
-    cm = confusion_matrix(p, predict)
+    cm = confusion_matrix(predict, p)
     print(cm)
     print("--> saving confusion matrix")
     np.savetxt(f"$workdir/cm-train-C{len(c)}-D$size-{e+$re}.csv", cm, delimiter=",")
+    #with open(f"$workdir/pred-train-C{len(c)}-D$size-{e+$re}.txt", "w") as txt_file:
+        #for line in predict:
+            #txt_file.write(" ".join(line) + "\n")
     
     valid_loss = 0.0
+    valid_acc = 0.0
     vpredict = []
     vp = []
     model.eval()     # Optional when not using Model Specific layer
@@ -289,17 +291,19 @@ for e in range(epochs):
         vp = np.append(vp, vl.detach().numpy())
      
         vloss = loss_fn(vtarget,vlabels)
-        valid_loss = vloss.item() * data.size(0)
+        valid_loss = vloss.item()*vdata.size(0)
+    valid_acc += (vpredict == vp).sum()
 
     #np.savetxt(f"$workdir/cm-vtarget-C{len(c)}-D$size-{e+$re}.csv", vt.detach().numpy(), delimiter=",")
     #np.savetxt(f"$workdir/cm-vlabels-C{len(c)}-D$size-{e+$re}.csv", vl.detach().numpy(), delimiter=",")
     print("--> computing confusion matrix")
-    vcm = confusion_matrix(vp, vpredict)
+    vcm = confusion_matrix(vpredict, vp)
     print(vcm)
     print("--> saving confusion matrix")
     np.savetxt(f"$workdir/cm-valid-C{len(c)}-D$size-{e+$re}.csv", vcm, delimiter=",")
-    et = time.time()
-    rt = et-st
+    #with open(f"$workdir/pred-valid-C{len(c)}-D$size-{e+$re}.txt", "w") as txt_file:
+        #for line in vpredict:
+            #txt_file.write(" ".join(line) + "\n")
 
     print("--> testing model against test data (to see model accuracy)")
     tpredict = []
@@ -319,10 +323,13 @@ for e in range(epochs):
 
 
     print("--> computing confusion matrix")
-    tcm = confusion_matrix(tp, tpredict)
+    tcm = confusion_matrix(tpredict, tp)
     print(tcm)
     print("--> saving confusion matrix")
     np.savetxt(f"$workdir/cm-test-C{len(c)}-D$size-{e+$re}.csv", tcm, delimiter=",")
+
+    et = time.time()
+    rt = et-st
 
     print(f'Epoch {e+1+$re} \t Runtime: {round(rt,2)}s \t Training Loss: {train_loss / len(train_dataloader)} \t Validation Loss: {valid_loss / len(validation_dataloader)}')
     # if min_valid_loss > valid_loss:
@@ -334,16 +341,38 @@ for e in range(epochs):
         # print(" ")
     
     tl = train_loss / len(train_dataloader)
+    ta = train_acc / len(training_data)
     vl = valid_loss / len(validation_dataloader)
+    va = valid_acc / len(validation_data)
    
+    #f = open("$workdir/t.txt", "a+")
+    #f.write(str(train_loss) + "\n")
+    #print(f"--> stored: {train_loss}")
+    #f.close()
+
+    #f = open("$workdir/v.txt", "a+")
+    #f.write(str(valid_loss) + "\n")
+    #print(f"--> stored: {valid_loss}")
+    #f.close()
+
     f = open("$workdir/tl.txt", "a+")
     f.write(str(tl) + "\n")
     print(f"--> stored training loss values: {tl}")
     f.close()
 
+    f = open("$workdir/ta.txt", "a+")
+    f.write(str(ta) + "\n")
+    print(f"--> stored training accuracy values: {ta}")
+    f.close()
+
     f = open("$workdir/vl.txt", "a+")
     f.write(str(vl) + "\n")
     print(f"--> stored validation loss values: {vl}")
+    f.close()
+
+    f = open("$workdir/va.txt", "a+")
+    f.write(str(va) + "\n")
+    print(f"--> stored validation accuracy values: {va}")
     f.close()
 
 

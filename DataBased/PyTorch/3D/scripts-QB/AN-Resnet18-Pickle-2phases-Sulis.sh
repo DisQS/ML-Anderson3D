@@ -4,7 +4,7 @@ epochs=${2:-50} #No of epochs
 re=${3:-0} #Set restart point
 no=${4:-4000} #Number of smaples to take from each category
 size=${5:-30} #System size used
-categories=${6:-"15,18"} #List of categories to use separated by ,
+categories=${6:-"15,15.25,15.5,15.75,16,16.2,16.3,16.4,16.6,16.7,16.8,17,17.25,17.5,17.75,18"} #List of categories to use separated by ,
 
 echo $getseed $epochs $re $no $size $categories 
 
@@ -89,7 +89,7 @@ class CustomImageDataset(Dataset):
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
         image = np.load(img_path, allow_pickle=True)
-        image = np.square(image)
+        #image = np.square(image)
         image = image.reshape(1,$size,$size,$size)
         label = self.img_labels.iloc[idx, 1]
         if self.transform:
@@ -239,6 +239,7 @@ print("--> beginning training")
 for e in range(epochs):
     st = time.time()
     train_loss = 0.0
+    train_acc = 0.0
     predict = []
     p = []
     model.train()     # Optional when not using Model Specific layer
@@ -258,17 +259,22 @@ for e in range(epochs):
         loss.backward()
         optimizer.step()
         train_loss += loss.item()
+    train_acc += (predict == p).sum()
 
 
     #np.savetxt(f"$workdir/cm-target-C{len(c)}-D$size-{e+$re}.csv", t.detach().numpy(), delimiter=",")
     #np.savetxt(f"$workdir/cm-tlabels-C{len(c)}-D$size-{e+$re}.csv", l.detach().numpy(), delimiter=",")
     print("--> computing confusion matrix")
-    cm = confusion_matrix(p, predict)
+    cm = confusion_matrix(predict, p)
     print(cm)
     print("--> saving confusion matrix")
     np.savetxt(f"$workdir/cm-train-C{len(c)}-D$size-{e+$re}.csv", cm, delimiter=",")
+    #with open(f"$workdir/pred-train-C{len(c)}-D$size-{e+$re}.txt", "w") as txt_file:
+        #for line in predict:
+            #txt_file.write(" ".join(line) + "\n")
     
     valid_loss = 0.0
+    valid_acc = 0.0
     vpredict = []
     vp = []
     model.eval()     # Optional when not using Model Specific layer
@@ -286,17 +292,19 @@ for e in range(epochs):
         vp = np.append(vp, vl.detach().numpy())
      
         vloss = loss_fn(vtarget,vlabels)
-        valid_loss = vloss.item() * data.size(0)
+        valid_loss = vloss.item()*vdata.size(0)
+    valid_acc += (vpredict == vp).sum()
 
     #np.savetxt(f"$workdir/cm-vtarget-C{len(c)}-D$size-{e+$re}.csv", vt.detach().numpy(), delimiter=",")
     #np.savetxt(f"$workdir/cm-vlabels-C{len(c)}-D$size-{e+$re}.csv", vl.detach().numpy(), delimiter=",")
     print("--> computing confusion matrix")
-    vcm = confusion_matrix(vp, vpredict)
+    vcm = confusion_matrix(vpredict, vp)
     print(vcm)
     print("--> saving confusion matrix")
     np.savetxt(f"$workdir/cm-valid-C{len(c)}-D$size-{e+$re}.csv", vcm, delimiter=",")
-    et = time.time()
-    rt = et-st
+    #with open(f"$workdir/pred-valid-C{len(c)}-D$size-{e+$re}.txt", "w") as txt_file:
+        #for line in vpredict:
+            #txt_file.write(" ".join(line) + "\n")
 
     print("--> testing model against test data (to see model accuracy)")
     tpredict = []
@@ -316,10 +324,13 @@ for e in range(epochs):
 
 
     print("--> computing confusion matrix")
-    tcm = confusion_matrix(tp, tpredict)
+    tcm = confusion_matrix(tpredict, tp)
     print(tcm)
     print("--> saving confusion matrix")
     np.savetxt(f"$workdir/cm-test-C{len(c)}-D$size-{e+$re}.csv", tcm, delimiter=",")
+
+    et = time.time()
+    rt = et-st
 
     print(f'Epoch {e+1+$re} \t Runtime: {round(rt,2)}s \t Training Loss: {train_loss / len(train_dataloader)} \t Validation Loss: {valid_loss / len(validation_dataloader)}')
     # if min_valid_loss > valid_loss:
@@ -331,11 +342,28 @@ for e in range(epochs):
         # print(" ")
     
     tl = train_loss / len(train_dataloader)
+    ta = train_acc / len(training_data)
     vl = valid_loss / len(validation_dataloader)
+    va = valid_acc / len(validation_data)
    
+    #f = open("$workdir/t.txt", "a+")
+    #f.write(str(train_loss) + "\n")
+    #print(f"--> stored: {train_loss}")
+    #f.close()
+
+    #f = open("$workdir/v.txt", "a+")
+    #f.write(str(valid_loss) + "\n")
+    #print(f"--> stored: {valid_loss}")
+    #f.close()
+
     f = open("$workdir/tl.txt", "a+")
     f.write(str(tl) + "\n")
     print(f"--> stored training loss values: {tl}")
+    f.close()
+
+    f = open("$workdir/ta.txt", "a+")
+    f.write(str(ta) + "\n")
+    print(f"--> stored training accuracy values: {ta}")
     f.close()
 
     f = open("$workdir/vl.txt", "a+")
@@ -343,8 +371,15 @@ for e in range(epochs):
     print(f"--> stored validation loss values: {vl}")
     f.close()
 
+    f = open("$workdir/va.txt", "a+")
+    f.write(str(va) + "\n")
+    print(f"--> stored validation accuracy values: {va}")
+    f.close()
+
+
 
 print("--> task complete")
+
 EOD
 
 
@@ -363,13 +398,13 @@ cat > ${job} << EOD
 module purge
 
 #this list of modules has been loaded into the collection PT
-#module load GCCcore/10.2.0
-#module load Python/3.8.6
-#module load GCC/10.2.0  CUDA/11.1.1  OpenMPI/4.0.5
-#module load PyTorch/1.9.0
-#module load torchvision/0.10.0-PyTorch-1.9.0 matplotlib/3.3.3 scikit-learn/0.23.2
+module load GCCcore/10.2.0
+module load Python/3.8.6
+module load GCC/10.2.0  CUDA/11.1.1  OpenMPI/4.0.5
+module load PyTorch/1.9.0
+module load torchvision/0.10.0-PyTorch-1.9.0 matplotlib/3.3.3 scikit-learn/0.23.2
 
-module restore PT
+#module restore PT
 module list
 
 
