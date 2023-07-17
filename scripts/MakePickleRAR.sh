@@ -52,7 +52,7 @@ basename = os.path.basename(str(sys.argv[3]))
 #print('bn:', basename)
 
 filename, file_extension = os.path.splitext(basename)
-print('--> creation of file',filename+'.pkl')
+#print('--> creation of file',filename+'.pkl')
 
 raw_path=str(sys.argv[1])+filepath[1:]+'/'+filename+'.raw'
 pkl_path=str(sys.argv[2])+'/'+filename+'.pkl'
@@ -105,7 +105,7 @@ done
 pwd
 
 if [ -f raw.lst ]; then
-   sort -R raw.lst | parallel -j$cores -a - python $pkldir/$Wdir/$pyscript $rawdir/$Wdir $pkldir/$Wdir {}
+   sort -R raw.lst | parallel --bar -j$cores -a - python $pkldir/$Wdir/$pyscript $rawdir/$Wdir $pkldir/$Wdir {}
 else
    echo '->- all $nb_sample chosen .raw files already converted into .pkl files --- skipping!'
 fi
