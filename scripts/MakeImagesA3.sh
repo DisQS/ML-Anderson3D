@@ -84,7 +84,7 @@ cat > $imgdir/$Wdir"/"${jobfile} << EOD
 #SBATCH --time=48:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=24
+#SBATCH --cpus-per-task=$cores
 #SBATCH --mem-per-cpu=3700
 
 # DT2018
@@ -143,8 +143,8 @@ EOD
     echo ">-- starting the .sh file"
     #(sbatch -q devel ${jobfile})
     #(sbatch -q taskfarm ${jobfile})
-    #(sbatch ${jobfile})
-    (${imgdir}/$Wdir/${jobfile})
+    sbatch ${imgdir}/$Wdir/${jobfile}
+    #(${imgdir}/$Wdir/${jobfile})
     
 done
 
