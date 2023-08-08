@@ -5,6 +5,7 @@ imgdir=${2:-../data2}
 nb_sample=${3:-10}
 cores=${4:-1}
 imgsize=${5:-100}
+type=${6:-png}
 
 #WFPLOT=$HOME/Projects/MachineLearning/WFplot/WFplot.GF
 WFPLOT=/storage/disqs/ML-Anderson3D/ML-Anderson3D/WFplot/WFplot.GF
@@ -103,10 +104,10 @@ rm -f raw.lst
 
 for rawfile in \`find . -name \Evec*.raw | sort | head -$nb_sample\`
 do
-    #echo $imgdir/$Wdir/\`basename \$rawfile .raw\`.img
+    #echo $imgdir/$Wdir/\`basename \$rawfile .raw\`.$type
     #echo \`dirname \$rawfile\`
-    if [ ! -f $imgdir/$Wdir/\`basename \$rawfile .raw\`.img ]; then
-	echo '->-' \$rawfile "needs .img file"
+    if [ ! -f $imgdir/$Wdir/\`basename \$rawfile .raw\`.$type ]; then
+	echo '->-' \$rawfile "needs .$type file"
         #echo "file" \`basename \$rawfile .raw\`.img  "does not exist" 
 	echo \$rawfile >> raw.lst
     fi
@@ -115,7 +116,7 @@ done
 pwd
 
 if [ -f raw.lst ]; then
-   sort -R raw.lst | parallel --bar -j$cores -a - source $imgdir/$Wdir/$imgscript $rawdir/$Wdir $imgdir/$Wdir {} $imgsize
+   sort -R raw.lst | parallel --bar -j$cores -a - source $imgdir/$Wdir/$imgscript $rawdir/$Wdir $imgdir/$Wdir {} $imgsize 1 0 $type
 else
    echo '->- all $nb_sample chosen .raw files already converted into .img files --- skipping!'
 fi
