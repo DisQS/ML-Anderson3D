@@ -2,9 +2,9 @@
 getseed=${1:-"N"} #Set to Y if you what to reuse stored seed
 epochs=${2:-50} #No of epochs
 re=${3:-0} #Set restart point
-no=${4:-4000} #Number of smaples to take from each category
+no=${4:-5000} #Number of smaples to take from each category
 size=${5:-30} #System size used
-categories=${6:-"15,15.25,15.5,15.75,16,16.2,16.3,16.4,16.6,16.7,16.8,17,17.25,17.5,17.75,18"} #List of categories to use separated by ,
+#categories=${6:-"15,18"} #List of categories to use separated by ,
 
 echo $getseed $epochs $re $no $size $categories 
 
@@ -15,21 +15,21 @@ workdir=$(pwd)
 cd ../
 strdir=$(pwd)
 cd ../../
-numdir=$(pwd)/ND$size
+numdir=$(pwd)/O$size
 echo $numdir
 fdir=$strdir/NBs
 sdir=$strdir/scripts
-IFS=', ' read -r -a array <<< $categories
-classes=${#array[@]}
-mkdir -p $workdir/P$no-L$size-$classes
-workdir=$workdir/P$no-L$size-$classes
+#IFS=', ' read -r -a array <<< $categories
+#classes=${#array[@]}
+mkdir -p $workdir/OP$no-L$size
+workdir=$workdir/OP$no-L$size
 echo $numdir
 echo $workdir
 
 cd $workdir
 
-job=`printf "$fdir/Phase-N$no-L$size-$classes.sh"`
-py=`printf "$fdir/Phase-N$no-L$size-$classes.py"`
+job=`printf "$fdir/OPhase-N$no-L$size.sh"`
+py=`printf "$fdir/OPhase-N$no-L$size.py"`
 echo $py
 
 now=$(date +"%T")
@@ -82,14 +82,12 @@ class CustomImageDataset(Dataset):
         self.img_dir = img_dir
         self.transform = transform
         self.target_transform = target_transform
-
     def __len__(self):
         return len(self.img_labels)
-
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
         image = np.load(img_path, allow_pickle=True)
-        #image = np.square(image)
+        image = np.square(image)
         image = image.reshape(1,$size,$size,$size)
         label = self.img_labels.iloc[idx, 1]
         if self.transform:
@@ -98,17 +96,10 @@ class CustomImageDataset(Dataset):
             label = self.target_transform(label)
         return image, label
 
+
 print("--> defining categories")
-
-c = np.fromstring("$categories",dtype=float,sep=",")
+c = np.array(["Ext","Loc"])
 print(c)
-
-
-casez = []
-for i in range (0, len(c)):
-    casez = np.append(casez, "W"+str(c[i]))
-print(casez)
-
 print("--> categories have been defined. No. of categories used = " + str(len(c)))
 
 store="N$no-L$size"
@@ -143,9 +134,10 @@ print("--> creating labels file to identify files to be used")
 if os.path.exists(f"{path}/labels"):
     shutil.rmtree(f"{path}/labels")
 os.mkdir(f"{path}/labels")
-for i in range(0,len(casez)):
-        csv_input = pd.read_csv(f'{path}/{casez[i]}/labels.csv')
-        if c[i] > 16.5:
+
+for i in range(0,len(c)):
+        csv_input = pd.read_csv(f'{path}/{c[i]}/labels.csv')
+        if i == 1:
                 csv_input.replace(to_replace=0,value=1,inplace = True)
         csv_input.to_csv(f'{path}/labels/labels{c[i]}.csv', index=False)
 
@@ -165,12 +157,12 @@ if $size == 100:
 else:
     batch_size = 32
 ndata = $no
-for i in range(0,len(casez)):
+for i in range(0,len(c)):
     if i == 0:
-        data = CustomImageDataset(annotations_file=f"{path}/labels/labels{c[i]}.csv",img_dir=f"{path}/{casez[i]}")
+        data = CustomImageDataset(annotations_file=f"{path}/labels/labels{c[i]}.csv",img_dir=f"{path}/{c[i]}")
         training_data, validation_data, test_data = random_split(data,[int(ndata*0.8),int(ndata*0.15),int(ndata*0.05)])
     else:
-        data = CustomImageDataset(annotations_file=f"{path}/labels/labels{c[i]}.csv",img_dir=f"{path}/{casez[i]}")
+        data = CustomImageDataset(annotations_file=f"{path}/labels/labels{c[i]}.csv",img_dir=f"{path}/{c[i]}")
         train_set, validation_set, test_set = random_split(data,[int(ndata*0.8),int(ndata*0.15),int(ndata*0.05)]) 
         training_data = ConcatDataset([training_data,train_set])
         validation_data = ConcatDataset([validation_data,validation_set])
@@ -221,7 +213,7 @@ print(model)
 
 
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 print(f"optimizer used: {optimizer}")
 
 

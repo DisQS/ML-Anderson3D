@@ -2,35 +2,27 @@
 getseed=${1:-"N"} #Set to Y if you what to reuse stored seed
 epochs=${2:-50} #No of epochs
 re=${3:-0} #Set restart point
-no=${4:-4000} #Number of smaples to take from each category
-size=${5:-30} #System size used
+no=${4:-5000} #Number of smaples to take from each category
+size=${5:-20} #System size used
 categories=${6:-"15,15.25,15.5,15.75,16,16.2,16.3,16.4,16.5,16.6,16.7,16.8,17,17.25,17.5,17.75,18"} #List of categories to use separated by ,
 
-echo $getseed $epochs $re $no $size $categories 
+echo $getseed $epochs $re $no $size $imgsize $categories 
 
 
 #execute file in terminal while in the output folder
-workdir=$(pwd)
+outdir=$(pwd)
 
 cd ../
 strdir=$(pwd)
 cd ../../
-numdir=$(pwd)/ND$size
+numdir=$(pwd)/ND"$size"
 echo $numdir
 fdir=$strdir/NBs
 sdir=$strdir/scripts
 IFS=', ' read -r -a array <<< $categories
 classes=${#array[@]}
-mkdir -p $workdir/N$no-L$size-$classes
-workdir=$workdir/N$no-L$size-$classes
+
 echo $numdir
-echo $workdir
-
-cd $workdir
-
-job=`printf "$fdir/Num-N$no-L$size-$classes.sh"`
-py=`printf "$fdir/Num-N$no-L$size-$classes.py"`
-echo $py
 
 now=$(date +"%T")
 echo "Current time : $now"
@@ -38,8 +30,7 @@ echo "Current time : $now"
 
 
 
-
-cat > ${py} << EOD
+for i in {1..10}; do mkdir -p $outdir/N$no-L$size-$classes-$i; workdir=$outdir/N$no-L$size-$classes-$i; echo $workdir; py=`printf "$fdir/Num-N$no-L$size-$classes-$i.py"`; cat > ${py} << EOD; done
 #!/usr/bin/env python
 # coding: utf-8
 
@@ -380,7 +371,7 @@ print("--> task complete")
 EOD
 
 
-cat > ${job} << EOD
+for i in {1..10}; do job=`printf "$fdir/Num-N$no-L$size-$classes-$i.sh"`; py=`printf "$fdir/Num-N$no-L$size-$classes-$i.py"`; echo $py; cat > ${job} << EOD; done
 #!/bin/bash
 
 #SBATCH --nodes=1
@@ -410,9 +401,4 @@ srun $py
 
 EOD
 
-chmod 755 ${job}
-chmod g+w ${job}
-chmod 755 ${py}
-
-sbatch ${job}
-
+for i in {1..10}; do chmod 755 $fdir/Num-N$no-L$size-$classes-$i.sh; chmod g+w $fdir/Num-N$no-L$size-$classes-$i.sh; chmod 755 $fdir/Num-N$no-L$size-$classes-$i.py; sbatch $fdir/Num-N$no-L$size-$classes-$i.sh; done

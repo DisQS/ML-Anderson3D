@@ -2,16 +2,16 @@
 getseed=${1:-"N"} #Set to Y if you what to reuse stored seed
 epochs=${2:-50} #No of epochs
 re=${3:-0} #Set restart point
-no=${4:-4000} #Number of smaples to take from each category
-size=${5:-30} #System size used
-imgsize=${6:-100} #image size used
+no=${4:-5000} #Number of smaples to take from each category
+size=${5:-100} #System size used
+imgsize=${6:-500} #image size used
 categories=${7:-"15,15.25,15.5,15.75,16,16.2,16.3,16.4,16.5,16.6,16.7,16.8,17,17.25,17.5,17.75,18"} #List of categories to use separated by ,
 
 echo $getseed $epochs $re $no $size $imgsize $categories 
 
 
 #execute file in terminal while in the output folder
-workdir=$(pwd)
+outdir=$(pwd)
 
 cd ../
 strdir=$(pwd)
@@ -22,16 +22,8 @@ fdir=$strdir/NBs
 sdir=$strdir/scripts
 IFS=', ' read -r -a array <<< $categories
 classes=${#array[@]}
-mkdir -p $workdir/I$no-L$size-$classes-s$imgsize
-workdir=$workdir/I$no-L$size-$classes-s$imgsize
+
 echo $numdir
-echo $workdir
-
-cd $workdir
-
-job=`printf "$fdir/Img-N$no-L$size-$classes-s$imgsize.sh"`
-py=`printf "$fdir/Img-N$no-L$size-$classes-s$imgsize.py"`
-echo $py
 
 now=$(date +"%T")
 echo "Current time : $now"
@@ -39,8 +31,7 @@ echo "Current time : $now"
 
 
 
-
-cat > ${py} << EOD
+for i in {1..10}; do mkdir -p $outdir/I$no-L$size-$classes-s$imgsize-$i; workdir=$outdir/I$no-L$size-$classes-s$imgsize-$i; echo $workdir; py=`printf "$fdir/Img-N$no-L$size-$classes-s$imgsize-$i.py"`; cat > ${py} << EOD; done
 #!/usr/bin/env python
 # coding: utf-8
 print("--> importing modules")
@@ -329,7 +320,7 @@ print("--> task complete")
 EOD
 
 
-cat > ${job} << EOD
+for i in {1..10}; do job=`printf "$fdir/Img-N$no-L$size-$classes-s$imgsize-$i.sh"`; py=`printf "$fdir/Img-N$no-L$size-$classes-s$imgsize-$i.py"`; echo $py; cat > ${job} << EOD; done
 #!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -342,22 +333,18 @@ cat > ${job} << EOD
 module purge
 
 # the following modules have been saved into collection PT
-#module load GCCcore/10.2.0
-#module load Python/3.8.6
-#module load GCC/10.2.0  CUDA/11.1.1  OpenMPI/4.0.5
-#module load PyTorch/1.7.1
-#module load torchvision/0.8.2-PyTorch-1.7.1 
-#module load scikit-learn/0.23.2 
-#module load matplotlib/3.3.3
+module load GCCcore/10.2.0
+module load Python/3.8.6
+module load GCC/10.2.0  CUDA/11.1.1  OpenMPI/4.0.5
+module load PyTorch/1.7.1
+module load torchvision/0.8.2-PyTorch-1.7.1 
+module load scikit-learn/0.23.2 
+module load matplotlib/3.3.3
 
-module restore PT
-module list
+#module restore PT
+#module list
 
 srun $py
 EOD
 
-chmod 755 ${job}
-chmod g+w ${job}
-chmod 755 ${py}
-
-sbatch ${job}
+for i in {1..10}; do chmod 755 $fdir/Img-N$no-L$size-$classes-s$imgsize-$i.sh; chmod g+w $fdir/Img-N$no-L$size-$classes-s$imgsize-$i.sh; chmod 755 $fdir/Img-N$no-L$size-$classes-s$imgsize-$i.py; sbatch $fdir/Img-N$no-L$size-$classes-s$imgsize-$i.sh; done

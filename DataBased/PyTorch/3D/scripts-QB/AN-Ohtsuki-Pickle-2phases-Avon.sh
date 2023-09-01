@@ -117,7 +117,7 @@ class CustomImageDataset(Dataset):
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
         image = np.load(img_path, allow_pickle=True)
-        image = np.square(image)
+        #image = np.square(image)
         image = image.reshape(1,$size,$size,$size)
         label = self.img_labels.iloc[idx, 1]
         if self.transform:
@@ -382,13 +382,13 @@ EOD
 
 cat > ${job} << EOD
 #!/bin/bash
+#SBATCH --partition=gpu
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem-per-cpu=3700
-#SBATCH --time=48:00:00
-#SBATCH --partition=gpu
 #SBATCH --gres=gpu:quadro_rtx_6000:1
+#SBATCH --time=48:00:00
 
 module purge
 
