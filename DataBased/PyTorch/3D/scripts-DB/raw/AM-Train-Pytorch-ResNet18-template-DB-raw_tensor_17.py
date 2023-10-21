@@ -14,7 +14,7 @@ import time
 import random
 import seaborn as sns
 import sys
-sys.path.insert(0, '/home/physics/phsht/Projects/ML-Anderson3D/DataBased/Pytorch/3D/scripts-DB')
+sys.path.insert(0, '/home/physics/phsht/Projects/ML-Anderson3D/DataBased/PyTorch/3D/scripts-DB')
 from AM_MLtools import *
 from tqdm import tqdm, trange
 import os
