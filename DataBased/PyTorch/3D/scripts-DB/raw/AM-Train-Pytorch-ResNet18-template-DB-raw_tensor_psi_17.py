@@ -14,7 +14,7 @@ import time
 import random
 import seaborn as sns
 import sys
-sys.path.insert(0, '/home/physics/phrhmb/Anderson/AM_code')
+sys.path.insert(0, '/home/physics/phsht/Projects/ML-Anderson3D/DataBased/PyTorch/3D/scripts-DB')
 from AM_MLtools import *
 from tqdm import tqdm, trange
 import os
@@ -51,12 +51,10 @@ nb_classes=len(subclasses)
 print('CLASSES',my_classes)
 print('###############')
 print(subclasses)
-
-
-dataname='L'+str(width)+'-'+str(size_samp)
-data_test='L'+str(width)+'-500-test2'
-datapath = '/home/physics/phrhmb/Anderson/Data/raw/'+dataname
-datatest = '/home/physics/phrhmb/Anderson/Data/raw/'+data_test
+dataname='L'+str(width)+'-'+str(size_samp)+'-pkl'
+data_test='L'+str(width)+'-500-pkl-test'
+datapath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+dataname
+datatest = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+data_test
 print(os.listdir(datapath))
 print(dataname,"\n",datapath)
 
