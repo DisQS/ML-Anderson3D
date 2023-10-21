@@ -191,7 +191,7 @@ if flag==0:
     print('number of classes',number_classes )
 
     base_model = train_model(
-        model,train,val,test,
+        model,train,val,
         device, 
         criterion,optimizer,
         num_epochs,exp_lr_scheduler,savepath, 
