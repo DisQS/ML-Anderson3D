@@ -344,13 +344,13 @@ def train_model(model,train,val,device,criterion, optimizer, num_epochs, schedul
                 # We want variables to hold the loss statistics
                 #loss.item() extract the loss value as float then it is multiply by the batch size
                 running_loss+=loss.item()*inputs.size(0)
-                running_corrects+= torch.sum(preds==labels.data)
+                running_corrects+= torch.sum(preds==labels.data).item()
             if phase == train:
                 scheduler.step()
 
             if phase == train:
                 epoch_loss= running_loss/len(phase.dataset)
-                epoch_acc = running_corrects.double()/ len(phase.dataset)
+                epoch_acc = running_corrects/ len(phase.dataset)
                 print('{} loss= {:4f}, accuracy= {:4f}'.format(
                     'Training result:', epoch_loss, epoch_acc))
                 accuracy.append(epoch_acc)
@@ -359,7 +359,7 @@ def train_model(model,train,val,device,criterion, optimizer, num_epochs, schedul
 
             if phase == val:
                 epoch_loss= running_loss/len(val.dataset)
-                epoch_acc = running_corrects.double()/len(val.dataset)
+                epoch_acc = running_corrects/len(val.dataset)
                 print('{} val_loss= {:4f}, val_accuracy= {:4f}'.format(
                     'Validation result:', epoch_loss, epoch_acc))
                 val_accuracy.append(epoch_acc)
