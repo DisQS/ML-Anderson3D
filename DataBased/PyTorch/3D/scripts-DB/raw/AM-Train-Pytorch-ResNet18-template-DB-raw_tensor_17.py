@@ -52,10 +52,10 @@ print('CLASSES',my_classes)
 print('###############')
 print(subclasses)
 dataname='L'+str(width)+'-'+str(size_samp)+'-pkl'
-data_test='L'+str(width)+'-500-pkl-test'
+#data_test='L'+str(width)+'-500-pkl-test'
 
 datapath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+dataname
-datatest = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+data_test
+#datatest = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+data_test
 
 
 print(os.listdir(datapath))
@@ -76,7 +76,7 @@ except FileExistsError:
 modelpath = savepath+modelname
 historypath = savepath+historyname
 cm_path=savepath+method+'_'+dataname+'cm_val_best.txt'
-cm_test_path=savepath+method+'_'+dataname+'cm_test_best.txt'
+#cm_test_path=savepath+method+'_'+dataname+'cm_test_best.txt'
 print(savepath,modelpath,historypath)
 #############################################################################################
 
@@ -105,23 +105,23 @@ print(os.getcwd())
 
 print('--> reading CSV data')
 whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=subclasses)
-test_dataset=MyDatasetFolder(root=datatest,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=subclasses)
+#test_dataset=MyDatasetFolder(root=datatest,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=subclasses)
 
 print('--> defining/reading DATA')
-test_set=0
-test_reject=0
+#test_set=0
+#test_reject=0
 os.getcwd()
 
 data_size = len(whole_dataset)
-test_size = len(test_dataset)
+#test_size = len(test_dataset)
 # validation_split=0.1
 split=int(np.floor(validation_split*data_size))
 training=int(data_size-split)
-split_test=int(np.floor(0.5*test_size))
-size_test=int(test_size-split_test)
+#split_test=int(np.floor(0.5*test_size))
+#size_test=int(test_size-split_test)
 # split the data into training and validation
 training_set, validation_set= torch.utils.data.random_split(whole_dataset,(training,split))
-test_set, test_reject=torch.utils.data.random_split(test_dataset,(size_test,split_test))
+#test_set, test_reject=torch.utils.data.random_split(test_dataset,(size_test,split_test))
 print('--> loading training data')
 train = torch.utils.data.DataLoader(
         dataset=training_set,
@@ -135,11 +135,11 @@ val = torch.utils.data.DataLoader(
         batch_size=batch_size,
         num_workers=16,
         shuffle=False)
-test = torch.utils.data.DataLoader(
-        dataset=test_set,
-        batch_size=batch_size,
-        num_workers=16,
-        shuffle=False)
+#test = torch.utils.data.DataLoader(
+#        dataset=test_set,
+##        batch_size=batch_size,
+ #       num_workers=16,
+#        shuffle=False)
 print('--> defining classes/labels')
 class_names = whole_dataset.classes
 print(class_names)
@@ -147,13 +147,13 @@ inputs,labels,paths= next(iter(train))
 
 img_sizeX,img_sizeY= inputs.shape[-1],inputs.shape[-2]
 num_of_train_samples = len(training_set) # total training samples
-num_of_test_samples = len(validation_set) #total validation samples
+#num_of_test_samples = len(validation_set) #total validation samples
 steps_per_epoch = np.ceil(num_of_train_samples // batch_size)
 number_classes = len(class_names)
 
 print('--> protocolling set-up')
 print('number of samples in the training set:', num_of_train_samples)
-print('number of samples in the validation set:', num_of_test_samples )
+#print('number of samples in the validation set:', num_of_test_samples )
 print('number of samples in a training batch',len(train)) 
 print('number of samples in a validation batch',len(val))
 print('number of classes',number_classes )
@@ -247,9 +247,9 @@ fig.savefig(savepath+method+'_'+dataname+'_accuracy'+'.png',transparent=True)
 
 cm=simple_confusion_matrix(model,val,device,number_classes,class_names)
 np.savetxt(cm_path,cm,fmt='%d')
-cm_test=simple_confusion_matrix(model,test,device,number_classes,class_names)
-np.savetxt(cm_test_path,cm_test,fmt='%d')
-percentage_correct(model,device,class_names,val,savepath,method,dataname)
+#cm_test=simple_confusion_matrix(model,test,device,number_classes,class_names)
+#np.savetxt(cm_test_path,cm_test,fmt='%d')
+#percentage_correct(model,device,class_names,val,savepath,method,dataname)
 
 
 
