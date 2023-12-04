@@ -43,13 +43,13 @@ print('--> defining parameters')
     
 myseed=SEED
 width= my_size
-size_samp=my_size_samp
 size_data=5000
 validation_split= my_validation_split
 batch_size=my_batch_size
 num_epochs= my_num_epochs
 subclasses=['W'+str(element) for element in my_classes]
 nb_classes=len(subclasses)
+size_samp=my_size_samp*nb_classes
 print('CLASSES',my_classes)
 print('###############')
 print(subclasses)

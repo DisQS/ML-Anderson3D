@@ -49,6 +49,7 @@ batch_size=my_batch_size
 num_epochs= my_num_epochs
 subclasses=['W'+str(element) for element in my_classes]
 nb_classes=len(subclasses)
+size_samp=my_size_samp*nb_classes
 print('CLASSES',my_classes)
 print('###############')
 print(subclasses)
