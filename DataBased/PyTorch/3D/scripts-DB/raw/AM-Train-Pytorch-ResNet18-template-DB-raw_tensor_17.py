@@ -23,7 +23,7 @@ import re
 ##############################################################################
 print(sys.argv)
     
-if ( len(sys.argv) >=11):
+if ( len(sys.argv) >=10):
     #SEED = 101
     SEED = int(sys.argv[1])
     my_size= int(sys.argv[2])
@@ -36,7 +36,7 @@ if ( len(sys.argv) >=11):
     my_classes=[float(classe_ele) for classe_ele in sys.argv[9].split(',')]
 else:
     print ('Number of', len(sys.argv), \
-           'arguments is less than expected (11) --- ABORTING!')
+           'arguments is less than expected (10) --- ABORTING!')
 
 print('--> defining parameters')
     
@@ -56,7 +56,8 @@ print(subclasses)
 dataname_og='L'+str(width)+'-'+str(size_data)+'-pkl'
 dataname='L'+str(width)+'-'+str(size_samp)+'-pkl'
 #data_test='L'+str(width)+'-500-pkl-test'
-datapath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+dataname
+datapath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+dataname_og
+#datapath = '/storage/disqs/ML-Anderson3D/EvecPKL/'+dataname_og
 #datatest = '/home/physics/phsht/Projects/ML-Anderson3D/Data/
 
 print(os.listdir(datapath))
@@ -107,9 +108,9 @@ print(os.getcwd())
 print('--> reading CSV data')
 temp_whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=subclasses)
 #test_dataset=MyDatasetFolder(root=datatest,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=subclasses)
-if my_size_samp!=5000:
-    print(my_size_samp)
-    indices = torch.randperm(len(temp_whole_dataset))[:my_size_samp]
+if size_samp!=5000:
+    print(size_samp)
+    indices = torch.randperm(len(temp_whole_dataset))[:size_samp]
     whole_dataset = torch.utils.data.Subset(temp_whole_dataset,indices)
 else:
     whole_dataset = whole_dataset   
