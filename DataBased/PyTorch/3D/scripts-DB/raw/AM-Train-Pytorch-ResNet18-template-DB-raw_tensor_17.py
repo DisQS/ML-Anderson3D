@@ -37,7 +37,8 @@ if ( len(sys.argv) >=10):
 else:
     print ('Number of', len(sys.argv), \
            'arguments is less than expected (10) --- ABORTING!')
-
+    quit()
+    
 print('--> defining parameters')
     
 myseed=SEED
