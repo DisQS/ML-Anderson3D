@@ -51,13 +51,18 @@ num_epochs= my_num_epochs
 subclasses=['W'+str(element) for element in my_classes]
 nb_classes=len(subclasses)
 size_samp=my_size_samp*nb_classes
+##########################################################################################
+#save_dir='checkpoint_L'+str(width)+'_Resnet_'+str(nb_classes)+'_classes'
+#os.makedirs(save_dir,exist_ok=True)
+#os.chdir(savedir)
+########################################################################################
 print('CLASSES',my_classes)
 print('###############')
 print(subclasses)
-dataname='L'+str(width)+'-'+str(size_data)+'-pkl'
-#dataname='L'+str(width)+'-'+str(size_samp)+'-pkl'
+dataname_og='L'+str(width)+'-'+str(size_data)+'-pkl'
+dataname='L'+str(width)+'-'+str(my_size_samp)+'-pkl'
 #data_test='L'+str(width)+'-500-pkl-test'
-datapath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+dataname
+datapath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+dataname_og
 #datapath = '/storage/disqs/ML-Anderson3D/EvecPKL/'+dataname_og
 #datatest = '/home/physics/phsht/Projects/ML-Anderson3D/Data/
 

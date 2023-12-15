@@ -19,9 +19,12 @@ codedir=`pwd`
 
 echo "PERCO: dir=" $dir ",seed:"$seed ",py="$py" ,size:"$size ", size_samp:"$size_samp ", validation_split:"$validation_split ", batch_size:"$batch_size ", num_epochs:"$num_epochs ", flag:"$flag ", size_samp:"$size_samp
 
-cd $dir
+cd `dirname $dir`
 
-mkdir $seed
+mkdir -p `basename $dir`
+cd `basename $dir`
+
+mkdir -p $seed
 cd $seed
 	
 jobfile="training-"$seed".sh"
