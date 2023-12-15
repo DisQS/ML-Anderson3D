@@ -371,6 +371,8 @@ def train_model(model,train,val,device,criterion, optimizer, num_epochs, schedul
                 best_model_wts = copy.deepcopy(model.state_dict())
         cm=simple_confusion_matrix(model,val,device,number_classes,class_names)
         np.savetxt(savepath+method+'_'+dataname+'cm_val_'+str(epoch)+'.txt',cm,fmt='%d',header=str_classes_names,comments='')
+        cm_train=simple_confusion_matrix(model,train,device,number_classes,class_names)
+        np.savetxt(savepath+method+'_'+dataname+'cm_train_'+str(epoch)+'.txt',cm_train,fmt='%d',header=str_classes_names,comments='')
         model.load_state_dict(best_model_wts)
         train_data=list(zip(epochs,_loss,accuracy,val_loss,val_accuracy))
         #print(train_data)
