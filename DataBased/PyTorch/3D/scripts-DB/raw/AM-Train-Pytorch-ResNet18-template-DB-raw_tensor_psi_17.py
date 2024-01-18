@@ -62,11 +62,11 @@ print('###############')
 print(subclasses)
 dataname_og='L'+str(width)+'-'+str(size_data)+'-pkl'
 dataname='L'+str(width)+'-'+str(my_size_samp)+'-pkl'
-#data_test='L'+str(width)+'-500-pkl-test'
+data_test='L'+str(width)+'-500-pkl-test'
 datapath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+dataname_og
 #datapath = '/storage/disqs/ML-Anderson3D/EvecPKL/'+dataname_og
 
-#datatest = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+data_test
+datatest = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+data_test
 print(os.listdir(datapath))
 print(dataname,"\n",datapath)
 
@@ -85,7 +85,7 @@ except FileExistsError:
 modelpath = savepath+modelname
 historypath = savepath+historyname
 cm_path=savepath+method+'_'+dataname+'cm_val_best.txt'
-#cm_test_path=savepath+method+'_'+dataname+'cm_test_best.txt'
+cm_test_path=savepath+method+'_'+dataname+'cm_test_best.txt'
 print(savepath,modelpath,historypath)
 #############################################################################################
 
@@ -114,7 +114,7 @@ print(os.getcwd())
 
 print('--> reading CSV data')
 temp_whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader_psi,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=subclasses)
-#test_dataset=MyDatasetFolder(root=datatest,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=subclasses)
+test_dataset=MyDatasetFolder(root=datatest,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=subclasses)
 if size_samp!=5000:
     print(size_samp)
     indices = torch.randperm(len(temp_whole_dataset))[:size_samp]
@@ -122,20 +122,20 @@ if size_samp!=5000:
 else:
     whole_dataset = whole_dataset   
 print('--> defining/reading DATA')
-#test_set=0
-#test_reject=0
+test_set=0
+test_reject=0
 os.getcwd()
 
 data_size = len(whole_dataset)
-#test_size = len(test_dataset)
+test_size = len(test_dataset)
 # validation_split=0.1
 split=int(np.floor(validation_split*data_size))
 training=int(data_size-split)
-#split_test=int(np.floor(0.5*test_size))
-#size_test=int(test_size-split_test)
+split_test=int(np.floor(0.5*test_size))
+size_test=int(test_size-split_test)
 # split the data into training and validation
 training_set, validation_set= torch.utils.data.random_split(whole_dataset,(training,split))
-#test_set, test_reject=torch.utils.data.random_split(test_dataset,(size_test,split_test))
+test_set, test_reject=torch.utils.data.random_split(test_dataset,(size_test,split_test))
 print('--> loading training data')
 train = torch.utils.data.DataLoader(
         dataset=training_set,
@@ -149,11 +149,11 @@ val = torch.utils.data.DataLoader(
         batch_size=batch_size,
         num_workers=16,
         shuffle=False)
-#test = torch.utils.data.DataLoader(
-#        dataset=test_set,
-#        batch_size=batch_size,
-#        num_workers=16,
-#        shuffle=False)
+test = torch.utils.data.DataLoader(
+        dataset=test_set,
+        batch_size=batch_size,
+        num_workers=16,
+        shuffle=False)
 print('--> defining classes/labels')
 class_names = temp_whole_dataset.classes
 print(class_names)
@@ -225,9 +225,7 @@ else:
     list_model.sort(key=os.path.getctime)
     print(list_model)
     checkpoint=torch.load(list_model[-1])
-    model.load_state_dict(checkpoint['model_state_dict'],map_location='cpu')
-    #checkpoint=torch.load(modelpath+'.pth',map_location='cpu')
-    #model.load_state_dict(checkpoint['model_state_dict'])
+    model.load_state_dict(checkpoint['model_state_dict'])#,map_location='cpu')
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     val_loss=checkpoint['val loss']
     accuracy=checkpoint['train acc']
@@ -238,8 +236,6 @@ else:
     model.eval()
 
 print('--> computing/saving confusion matrices')
-#cm=simple_confusion_matrix(model,val,device,number_classes,class_names)
-#np.savetxt(cm_path,cm,fmt='%d')
 loss_file=[file for file in os.listdir(savepath) if 'loss.txt' in file]
 data=np.loadtxt(savepath+'/'+loss_file[0],unpack=True)
 epochs=data[0]
@@ -261,8 +257,8 @@ fig.savefig(savepath+method+'_'+dataname+'_accuracy'+'.png',transparent=True)
 
 cm=simple_confusion_matrix(model,val,device,number_classes,class_names)
 np.savetxt(cm_path,cm,fmt='%d')
-#cm_test=simple_confusion_matrix(model,test,device,number_classes,class_names)
-#np.savetxt(cm_test_path,cm_test,fmt='%d')
+cm_test=simple_confusion_matrix(model,test,device,number_classes,class_names)
+np.savetxt(cm_test_path,cm_test,fmt='%d')
 percentage_correct(model,device,class_names,val,savepath,method,dataname)
 
 
