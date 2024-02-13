@@ -2,6 +2,7 @@ import torchvision
 import torch.nn.functional as F
 import torch
 import torch.nn as nn
+from typing import Any, Callable, cast, Dict, List, Optional, Tuple, Union
 import torch.optim as optim
 import torchvision
 from torchvision import datasets, models, transforms
@@ -20,6 +21,118 @@ import copy
 
 EXTENSIONS = ('.raw', '.pkl', '.txt')
 class MyDatasetFolder(torchvision.datasets.DatasetFolder):
+    # override the __getitem__ method. this is the method that dataloader calls
+    def __init__(
+        self,
+        root,
+        loader,
+        subclasses=[],
+        extensions=None,
+        transform=torchvision.transforms.ToTensor(),
+        target_transform=None,
+        is_valid_file=None):
+        self.subclasses=subclasses
+        super().__init__(root,loader,EXTENSIONS if is_valid_file is None else None,transform=transform, 
+                         target_transform=target_transform,is_valid_file=is_valid_file)
+        
+        classes, class_to_idx, old_classes, old_class_to_idx= self.find_new_classes(self.root)
+        samples = self.make_new_dataset(self.root,old_class_to_idx, class_to_idx,extensions, is_valid_file)
+        self.subclasses=subclasses
+        print('SUBCLASSES',self.subclasses)
+        self.loader = loader
+        self.extensions = extensions
+        self.old_classes = old_classes
+        self.old_class_to_idx =old_class_to_idx
+        self.classes = classes
+        self.class_to_idx = class_to_idx
+        self.samples = samples
+        self.targets = [s[1] for s in samples]
+    def has_file_allowed_extension(self,filename, extensions):
+        return filename.lower().endswith(extensions if isinstance(extensions, str) else tuple(extensions))
+
+    def make_new_dataset(self,directory,
+    old_class_to_idx,
+    class_to_idx,
+    extensions,
+    is_valid_file):
+        directory = os.path.expanduser(directory)
+
+        if old_class_to_idx or class_to_idx is None:
+            _,class_to_idx, __,old_class_to_idx = self.find_new_classes(directory)
+        elif notold_class_to_idx:
+            raise ValueError("'class_to_index' must have at least one entry to collect any samples.")
+        elif not class_to_idx:
+            raise ValueError("'new_class_to_index' must have at least one entry to collect any samples.")
+
+        both_none = extensions is None and is_valid_file is None
+        both_something = extensions is not None and is_valid_file is not None
+        if both_none or both_something:
+            raise ValueError("Both extensions and is_valid_file cannot be None or not None at the same time")
+
+        if extensions is not None:
+
+            def is_valid_file(x: str) -> bool:
+                return self.has_file_allowed_extension(x, extensions)  # type: ignore[arg-type]
+
+        is_valid_file = cast(Callable[[str], bool], is_valid_file)
+
+        instances = []
+        available_classes = set()
+        for target_class, old_target_class in zip(sorted(class_to_idx.keys()),sorted(old_class_to_idx.keys())):
+            print('target',old_target_class,'new_target', target_class)
+            old_class_index = old_class_to_idx[old_target_class]
+            class_index = class_to_idx[target_class]
+            old_target_dir = os.path.join(directory, old_target_class)
+            if not os.path.isdir(old_target_dir):
+                continue
+            for root, _, fnames in sorted(os.walk(old_target_dir, followlinks=True)):
+                for fname in sorted(fnames):
+                    path = os.path.join(root, fname)
+                    if is_valid_file(path):
+                        item = path, class_index, old_class_index
+                        instances.append(item)
+
+                        if old_target_class not in available_classes:
+                            available_classes.add(old_target_class)
+
+        empty_classes = set(old_class_to_idx.keys()) - available_classes
+        if empty_classes:
+            msg = f"Found no valid file for the classes {', '.join(sorted(empty_classes))}. "
+            if extensions is not None:
+                msg += f"Supported extensions are: {extensions if isinstance(extensions, str) else ', '.join(extensions)}"
+            raise FileNotFoundError(msg)
+
+        return instances
+    def find_new_classes(self,directory):
+        print('type root', directory)
+        old_classes = sorted(entry.name for entry in os.scandir(directory) if entry.is_dir())
+        old_classes=[entry for entry in old_classes if entry in self.subclasses]
+        prefix='W'
+        size=self.root.split('-')[0].split('L')[1]
+        print(size)
+        if any('A3' in ele for ele in old_classes)==True:
+            classes=[prefix+ele.split('hD')[1] for ele in old_classes]
+        else:
+            classes=old_classes        
+        if not old_classes:
+            raise FileNotFoundError(f"Couldn't find any class folder in {directory}.")
+        
+        old_class_to_idx = {cls_name: i for i, cls_name in enumerate(old_classes)}
+        class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
+        
+        return classes,class_to_idx, old_classes, old_class_to_idx
+    def __getitem__(self, index):
+        path, target,__ = self.samples[index]
+        sample = self.loader(path)
+        if self.transform is not None:
+            sample = self.transform(sample)
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+       #print('tuple', self.class_to_idx)
+        return sample, target, path
+
+######################################################################
+class former_MyDatasetFolder(torchvision.datasets.DatasetFolder):
     # override the __getitem__ method. this is the method that dataloader calls
     def __init__(
         self,
@@ -260,6 +373,7 @@ def pkl_file_loader_psi(input):
 
 #####################################################################################
 def train_model(model,train,val,device,criterion, optimizer, num_epochs, scheduler,savepath, method,dataname,modelname,modelpath,batch_size,class_names):
+    print('ok')
     start_epoch=0
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
@@ -717,6 +831,7 @@ def percentage_correct(model,device,class_names,val,savepath,method,dataname):
     class_total = list(0. for i in range(number_classes))
     accuracy=list(0. for i in range(number_classes))
     average=list(0. for i in range(number_classes))
+    model=model.to(device)
     first_parameter = next(model.parameters())
     input_length = len(first_parameter.size())
     with torch.no_grad():
@@ -792,4 +907,45 @@ def reg_prediction(dataloader,model,size,myseed,whole_dataset,savepath,nb_classe
     dict = {'path':list_paths,'label':list_labels,'prediction':list_preds}
     df = pd.DataFrame(dict)
     df.to_csv(savepath+'predictions_AM_'+str(size)+'_'+str(myseed)+'_'+str(nb_classes)+'_'+str(data_type)+'.csv',index=False)
+#####################################################################################
+def classification_predictions(dataloader,dataset,size,model,savepath,seed,nb_classes=17,data_type='val'):
+    was_training = model.training
+    model.eval()
+    list_paths=[]
+    list_labels=[]
+    list_preds=[]
+  
+    model=model.to('cpu')
+    first_parameter = next(model.parameters())
+    input_length = len(first_parameter.size())
+    header_l=['path','true label','prediction']
+    class_to_idx=dataset.class_to_idx
+    print(class_to_idx)
+    idx_to_class={v: k for k, v in class_to_idx.items()}
+    with torch.no_grad():
+        for i, (inputs,labels,paths) in enumerate(dataloader):
+            if input_length> len(inputs.shape):
+                inputs=inputs.unsqueeze(1)
+            inputs=inputs.to('cpu')
+            labels=labels.to('cpu')
+            labels.numpy()
+            predictions = model(inputs) #value of the output neurons
+            _, pred= torch.max(predictions,1)
+            for j in range(inputs.size()[0]):
+                temp_paths=paths[j]
+                temp_labels=labels[j].item()
+                temp_preds=pred[j].numpy()
+                temp_preds=int(temp_preds)
+                temp_labels=int(temp_labels)
+                real_pred=idx_to_class[temp_preds]
+                real_label=idx_to_class[temp_labels]
+                list_paths.append(temp_paths)
+                list_labels.append(real_label)
+                list_preds.append(real_pred)
+
+    dict = {'path':list_paths,'label':list_labels,'prediction':list_preds}
+    df = pd.DataFrame(dict)
+    df.to_csv(savepath+'predictions_class_W_L'+str(size)+'_'+str(seed)+'_'+str(nb_classes)+'_'+str(data_type)+'_.csv',index=False)
+
+    return
 
