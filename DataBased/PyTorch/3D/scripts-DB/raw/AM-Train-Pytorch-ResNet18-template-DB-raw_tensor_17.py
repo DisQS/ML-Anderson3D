@@ -16,6 +16,7 @@ import seaborn as sns
 import sys
 sys.path.insert(0, '/home/physics/phsht/Projects/ML-Anderson3D/DataBased/PyTorch/3D/scripts-DB')
 from AM_MLtools import *
+from AM_MLtools import *
 from tqdm import tqdm, trange
 import os
 import copy
@@ -33,7 +34,8 @@ if ( len(sys.argv) >=10):
     my_num_epochs= int(sys.argv[6])
     flag=int(sys.argv[7])
     mylr=float(sys.argv[8])
-    my_classes=[float(classe_ele) for classe_ele in sys.argv[9].split(',')]
+    psi_type=str(sys.argv[9])
+    my_classes=[float(classe_ele) for classe_ele in sys.argv[10].split(',')]
 else:
     print ('Number of', len(sys.argv), \
            'arguments is less than expected (10) --- ABORTING!')
@@ -51,21 +53,14 @@ num_epochs= my_num_epochs
 subclasses=['W'+str(element) for element in my_classes]
 nb_classes=len(subclasses)
 size_samp=my_size_samp*nb_classes
-##########################################################################################
-#save_dir='checkpoint_L'+str(width)+'_Resnet_'+str(nb_classes)+'_classes'
-#os.makedirs(save_dir,exist_ok=True)
-#os.chdir(savedir)
-########################################################################################
 print('CLASSES',my_classes)
 print('###############')
 print(subclasses)
-dataname_og='L'+str(width)+'-'+str(size_data)+'-pkl'
+dataname_og='L'+str(width)+'-'+str(size_data)#+'-pkl'
 dataname='L'+str(width)+'-'+str(my_size_samp)+'-pkl'
-data_test='L'+str(width)+'-500-pkl-test'
+data_test='L'+str(width)+'-500-test'
 datapath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+dataname_og
-#datapath = '/storage/disqs/ML-Anderson3D/EvecPKL/'+dataname_og
-datatest = '/home/physics/phsht/Projects/ML-Anderson3D/Data/
-
+testpath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/'
 print(os.listdir(datapath))
 print(dataname,"\n",datapath)
 
@@ -74,7 +69,7 @@ modelname = 'Model_'+method+'_'+dataname+'.pth'
 historyname = 'History_'+method+'_'+dataname+'.pkl'
 print(method,"\n",modelname,"\n",historyname)
 
-savepath = './'+dataname+'_Adam_'+str(mylr)+'_'+str(batch_size)+'/'
+savepath = './'+dataname+'_Adam_'+str(mylr)+'_'+str(batch_size)+'_'+psi_type+'/'
 
 try:
     os.mkdir(savepath)
@@ -83,8 +78,8 @@ except FileExistsError:
 
 modelpath = savepath+modelname
 historypath = savepath+historyname
-cm_path=savepath+method+'_'+dataname+'cm_val_best.txt'
-cm_test_path=savepath+method+'_'+dataname+'cm_test_best.txt'
+cm_path=savepath+method+'_'+dataname+'_'+psi_type+'_cm_val_best.txt'
+cm_test_path=savepath+method+'_'+dataname+'_'+psi_type+'_cm_test_best.txt'
 print(savepath,modelpath,historypath)
 #############################################################################################
 
@@ -110,10 +105,29 @@ if torch.cuda.is_available():
 print('chosen device: ',device)
 
 print(os.getcwd())
-
+listdir=[direc for direc in os.listdir(datapath)]
+print('list',listdir)
+if any('A' in ele for ele in listdir)==True:
+    prefix='A3-'+str(width)+'-E0.0-hD'
+else:
+    prefix='W'
+listdirtest=[direc for direc in os.listdir(testpath)]
+print('list',listdirtest)
+if any('A' in ele for ele in listdirtest)==True:
+    testprefix='A3-'+str(width)+'-E0.0-hD'
+else:
+    testprefix='W'
+test_subclasses=[testprefix+str(ele) for ele in my_classes]
+train_subclasses=['W'+str(ele) for ele in my_classes]
+print('train classes', train_subclasses)
+print('test classes', test_subclasses)
 print('--> reading CSV data')
-temp_whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=subclasses)
-test_dataset=MyDatasetFolder(root=datatest,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=subclasses)
+if psi_type=='squared':
+    temp_whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=train_subclasses)
+    test_dataset=MyDatasetFolder(root=testpath,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=test_subclasses)
+else:
+    temp_whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader_psi,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=train_subclasses)
+    test_dataset=MyDatasetFolder(root=testpath,loader=pkl_file_loader_psi,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=test_subclasses)
 if size_samp!=5000:
     print(size_samp)
     indices = torch.randperm(len(temp_whole_dataset))[:size_samp]
@@ -217,8 +231,10 @@ else:
     print('modelpath',modelname)
     first_parameter = next(model.parameters())
     input_length = len(first_parameter.size())
-    #if len(temp_list_model)!=0:
-    list_model=[savepath + files for files in temp_list_model]
+    if len(temp_list_model)!=0:
+        list_model=[savepath + files for files in temp_list_model]
+    else:
+        print('no model saved')
     print(list_model[0])
     print(os.getcwd())
     list_model.sort(key=os.path.getctime)
@@ -258,6 +274,8 @@ cm=simple_confusion_matrix(model,val,device,number_classes,class_names)
 np.savetxt(cm_path,cm,fmt='%d')
 cm_test=simple_confusion_matrix(model,test,device,number_classes,class_names)
 np.savetxt(cm_test_path,cm_test,fmt='%d')
+classification_predictions(val,temp_whole_dataset,width,model,savepath,myseed,len(class_names),'val')
+classification_predictions(test,temp_whole_dataset,width,model,savepath,myseed,len(class_names),'test')
 percentage_correct(model,device,class_names,val,savepath,method,dataname)
 
 
