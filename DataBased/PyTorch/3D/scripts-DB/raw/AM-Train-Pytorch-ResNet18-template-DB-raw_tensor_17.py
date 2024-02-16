@@ -56,7 +56,7 @@ size_samp=my_size_samp*nb_classes
 print('CLASSES',my_classes)
 print('###############')
 print(subclasses)
-dataname_og='L'+str(width)+'-'+str(size_data)#+'-pkl'
+dataname_og='L'+str(width)+'-'+str(size_data)+'-pkl'
 dataname='L'+str(width)+'-'+str(my_size_samp)+'-pkl'
 data_test='L'+str(width)+'-500-test'
 datapath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+dataname_og
