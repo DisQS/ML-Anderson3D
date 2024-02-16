@@ -226,6 +226,7 @@ if flag==0:
 else:
     print('--> loading saved model')
     temp_list_model=[files for files in os.listdir(savepath) if files.startswith(modelname) and files.endswith('.pth') ]
+    print(savepath)
     print('#############################')
     first_parameter = next(model.parameters())
     input_length = len(first_parameter.size())
