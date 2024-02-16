@@ -60,7 +60,7 @@ dataname_og='L'+str(width)+'-'+str(size_data)+'-pkl'
 dataname='L'+str(width)+'-'+str(my_size_samp)+'-pkl'
 data_test='L'+str(width)+'-500-pkl-test'
 datapath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+dataname_og
-testpath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/'+data_test
+testpath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+data_test
 print(os.listdir(datapath))
 print(dataname,"\n",datapath)
 
