@@ -16,7 +16,6 @@ import seaborn as sns
 import sys
 sys.path.insert(0, '/home/physics/phsht/Projects/ML-Anderson3D/DataBased/PyTorch/3D/scripts-DB')
 from AM_MLtools import *
-from AM_MLtools import *
 from tqdm import tqdm, trange
 import os
 import copy
@@ -65,7 +64,7 @@ print(os.listdir(datapath))
 print(dataname,"\n",datapath)
 
 method='PyTorch-resnet18-'+str(myseed)+'-e'+str(num_epochs)+'-bs'+str(batch_size)
-modelname = 'Model_'+method+'_'+dataname+'.pth'
+modelname = 'Model_'+method+'_'+dataname_og+'.pth'
 historyname = 'History_'+method+'_'+dataname+'.pkl'
 print(method,"\n",modelname,"\n",historyname)
 
@@ -226,9 +225,8 @@ if flag==0:
         batch_size,class_names)
 else:
     print('--> loading saved model')
-    temp_list_model=[files for files in os.listdir(savepath) if files.startswith(modelname) and files.endswith('.pth') ]
+    temp_list_model=[files for files in os.listdir(modelpath) if files.startswith(modelname) and files.endswith('.pth') ]
     print('#############################')
-    print('modelpath',modelname)
     first_parameter = next(model.parameters())
     input_length = len(first_parameter.size())
     if len(temp_list_model)!=0:
