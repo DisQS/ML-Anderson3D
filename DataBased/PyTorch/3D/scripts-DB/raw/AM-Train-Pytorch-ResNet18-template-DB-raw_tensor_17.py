@@ -225,7 +225,7 @@ if flag==0:
         batch_size,class_names)
 else:
     print('--> loading saved model')
-    temp_list_model=[files for files in os.listdir(savepath) if files.startswith(modelname) and files.endswith('.pth') ]
+    temp_list_model=[files for files in os.listdir(savepath) if files.endswith('.pth') ]
     print(savepath)
     print('#############################')
     first_parameter = next(model.parameters())
