@@ -69,7 +69,7 @@ modelname = 'Model_'+method+'_'+dataname+'.pth'
 historyname = 'History_'+method+'_'+dataname+'.pkl'
 print(method,"\n",modelname,"\n",historyname)
 
-savepath = './'+dataname+'_Adam_'+str(mylr)+'_'+str(batch_size)+'_'+psi_type+'/'
+savepath = './'+dataname+'_Adam_'+str(mylr)+'_'+str(batch_size)+'/'
 
 try:
     os.mkdir(savepath)
