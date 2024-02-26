@@ -249,7 +249,7 @@ else:
     epochs=checkpoint['train epoch']
     model.eval()
 
-print('--> computing/saving confusion matrices')
+print('--> computing/saving outputs')
 loss_file=[file for file in os.listdir(savepath) if 'loss.txt' in file]
 data=np.loadtxt(savepath+'/'+loss_file[0],unpack=True)
 epochs=data[0]
@@ -257,48 +257,31 @@ _loss=data[1]
 accuracy=data[2]
 val_loss=data[3]
 val_accuracy=data[4]
+
+print('--> saving loss curves')
 fig=plt.figure()
 plt.plot(epochs,val_loss, label='val loss')
 plt.plot(epochs,_loss, label='training loss')
 plt.legend(loc='upper left')
 fig.savefig(savepath+method+'_'+dataname+'_loss'+'.png',transparent=True)
 
+print('--> saving accuracy curves')
 fig=plt.figure()
 plt.plot(epochs,val_accuracy, label='val accuracy')
 plt.plot(epochs,accuracy, label='training accuracy')
 plt.legend(loc='upper left')
 fig.savefig(savepath+method+'_'+dataname+'_accuracy'+'.png',transparent=True)
 
+print('--> computing TRAINING confusion matrix')
 cm=simple_confusion_matrix(model,val,device,number_classes,class_names)
 np.savetxt(cm_path,cm,fmt='%d')
+print('--> computing TEST confusion matrix')
 cm_test=simple_confusion_matrix(model,test,device,number_classes,class_names)
 np.savetxt(cm_test_path,cm_test,fmt='%d')
+
+print('--> computing val/test predictions')
 classification_predictions(val,temp_whole_dataset,width,model,savepath,myseed,len(class_names),'val')
 classification_predictions(test,temp_whole_dataset,width,model,savepath,myseed,len(class_names),'test')
 percentage_correct(model,device,class_names,val,savepath,method,dataname)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+print('--> all DONE')
