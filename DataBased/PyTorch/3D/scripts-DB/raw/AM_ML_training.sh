@@ -13,7 +13,7 @@ classes=${10:-'15.0,15.25,15.5,15.75,16.0,16.2,16.3,16.4,16.5,16.6,16.7,16.8,17.
 
 
 validation_split=0.1
-num_epochs=15
+num_epochs=50
 codedir=`pwd`
 
 echo "PERCO: dir=" $dir ",seed:"$seed ",py="$py" ,size:"$size ", size_samp:"$size_samp ", validation_split:"$validation_split ", batch_size:"$batch_size ", num_epochs:"$num_epochs ", flag:"$flag ", size_samp:"$size_samp ", psi_type:"$psi_type
