@@ -179,7 +179,7 @@ training=int(data_size-split)
 #size_test=int(test_size-split_test)
 # split the data into training and validation
 training_set, validation_set= torch.utils.data.random_split(whole_dataset,(training,split))
-test_set, test_reject=torch.utils.data.random_split(test_dataset,(size_test,split_test))
+#test_set, test_reject=torch.utils.data.random_split(test_dataset,(size_test,split_test))
 print('--> loading training data')
 train = torch.utils.data.DataLoader(
         dataset=training_set,
@@ -245,7 +245,7 @@ if flag==0:
     print('number of classes',number_classes )
 
     base_model = train_model(
-        model,train,val,test,
+        model,train,val,
         device, 
         criterion,optimizer,
         num_epochs,exp_lr_scheduler,savepath, 
