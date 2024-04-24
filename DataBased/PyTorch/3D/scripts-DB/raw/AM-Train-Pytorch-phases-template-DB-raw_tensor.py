@@ -52,7 +52,7 @@ print('###############')
 print(subclasses)
 ##############################################################################
 dataname_og='L'+str(width)+'-'+str(size_data)+'-Ohtsuki'
-dataname='L'+str(width)+'-'+str(size_samp)+'-Ohtsuki'
+dataname='L'+str(width)+'-'+str(my_size_samp)+'-Ohtsuki'
 data_test='L'+str(width)+'-500-Ohtsuki-test'
 #datapath = '/storage/disqs/'+'ML-Anderson3D/EvecRaws/'+dataname # SC-RTP
 datapath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+dataname_og
