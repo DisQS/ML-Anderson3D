@@ -40,18 +40,19 @@ print('--> defining parameters')
 myseed=SEED
 width= my_size
 size_samp=my_size_samp
-size_data=5000
+size_data=500
 validation_split= my_validation_split
 batch_size=my_batch_size
 num_epochs= my_num_epochs
 subclasses=my_classes
 nb_classes=len(subclasses)
+size_samp=my_size_samp*nb_classes
 print('CLASSES',my_classes)
 print('###############')
 print(subclasses)
 ##############################################################################
 dataname_og='L'+str(width)+'-'+str(size_data)+'-Ohtsuki'
-dataname='L'+str(width)+'-'+str(my_size_samp)+'-Ohtsuki'
+dataname='L'+str(width)+'-'+str(size_samp)+'-Ohtsuki'
 data_test='L'+str(width)+'-500-Ohtsuki-test'
 #datapath = '/storage/disqs/'+'ML-Anderson3D/EvecRaws/'+dataname # SC-RTP
 datapath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+dataname_og
@@ -152,12 +153,18 @@ print(os.getcwd())
 
 print('--> reading CSV data')
 if psi_type=='squared':
-    temp_whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=train_subclasses)
+    temp_whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=subclasses)
     #test_dataset=MyDatasetFolder(root=testpath,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=test_subclasses)
 else:
-    temp_whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader_psi,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=train_subclasses)
+    temp_whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader_psi,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=subclasses)
     #test_dataset=MyDatasetFolder(root=testpath,loader=pkl_file_loader_psi,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=test_subclasses)
 
+if size_samp!=5000:
+    print(size_samp)
+    indices = torch.randperm(len(temp_whole_dataset))[:size_samp]
+    whole_dataset = torch.utils.data.Subset(temp_whole_dataset,indices)
+else:
+    whole_dataset = whole_dataset
 print('--> defining/reading DATA')
 test_set=0
 test_reject=0
