@@ -2,7 +2,8 @@ import torchvision
 import torch
 import torch.nn as nn
 import torchvision
-from torchvision import models
+from torchsummary import summary
+from torchvision import datasets, models
 import matplotlib.pyplot as plt
 import sklearn
 import numpy as np
@@ -29,11 +30,11 @@ if ( len(sys.argv) >=10):
     mylr=float(sys.argv[8])
     psi_type=str(sys.argv[9])
     my_classes=[float(classe_ele) for classe_ele in sys.argv[10].split(',')]
+    
 else:
     print ('Number of', len(sys.argv), \
            'arguments is less than expected (10) --- ABORTING!')
-    quit()
-    
+
 print('--> defining parameters')
     
 myseed=SEED
@@ -43,26 +44,27 @@ size_data=5000
 validation_split= my_validation_split
 batch_size=my_batch_size
 num_epochs= my_num_epochs
-subclasses=['W'+str(element) for element in my_classes]
+subclasses=['W'+str(element) for element in my_classes] #my_classes#
 nb_classes=len(subclasses)
-size_samp=my_size_samp*nb_classes
 print('CLASSES',my_classes)
 print('###############')
 print(subclasses)
-dataname_og='L'+str(width)+'-'+str(size_data)+'-pkl'
-dataname='L'+str(width)+'-'+str(my_size_samp)+'-pkl'
-data_test='L'+str(width)+'-500-pkl-test'
+##############################################################################
+dataname_og='L'+str(width)+'-'+str(size_data)+'-Ohtsuki'
+dataname='L'+str(width)+'-'+str(my_size_samp)+'-Ohtsuki'
+data_test='L'+str(width)+'-500-Ohtsuki-test'
+#datapath = '/storage/disqs/'+'ML-Anderson3D/EvecRaws/'+dataname # SC-RTP
 datapath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+dataname_og
 testpath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+data_test
 print(os.listdir(datapath))
 print(dataname,"\n",datapath)
-
-method='PyTorch-resnet18-'+str(myseed)+'-e'+str(num_epochs)+'-bs'+str(batch_size)
-modelname = 'Model_'+method+'_'+dataname_og+'.pth'
+##############################################################################
+method='PyTorch-Ohtsuki-'+str(myseed)+'-e'+str(num_epochs)+'-bs'+str(batch_size)
+modelname = 'Model_'+method+'_'+dataname+'.pth'
 historyname = 'History_'+method+'_'+dataname+'.pkl'
 print(method,"\n",modelname,"\n",historyname)
 
-savepath = './'+dataname+'_Adam_'+str(mylr)+'_'+str(batch_size)+'/'
+savepath = './'+dataname+'_Adam_'+str(batch_size)+'/'
 
 try:
     os.mkdir(savepath)
@@ -71,9 +73,53 @@ except FileExistsError:
 
 modelpath = savepath+modelname
 historypath = savepath+historyname
-cm_path=savepath+method+'_'+dataname+'_'+psi_type+'_cm_val_best.txt'
-cm_test_path=savepath+method+'_'+dataname+'_'+psi_type+'_cm_test_best.txt'
+cm_val_path=savepath+method+'_'+dataname+'cm_val_best.txt'
+cm_test_path=savepath+method+'_'+dataname+'cm_test_best.txt'
 print(savepath,modelpath,historypath)
+#############################################################################################
+class Ohtsuki3D(nn.Module):
+    def __init__(self):
+        super(Ohtsuki3D, self).__init__()
+
+        self.Conv1 = nn.Conv3d(1, 64,5, stride=1,padding='valid',bias=False)
+        self.Conv2 = nn.Conv3d(64,64,5, stride=1,padding='same',bias=False)
+        self.maxpool1 = nn.MaxPool3d(kernel_size = 2, stride = 2)
+        self.dropout1=nn.Dropout(p=0.5)
+
+        self.Conv3 = nn.Conv3d(64, 96,3, stride=1,padding='valid',bias=False)
+        self.Conv4 = nn.Conv3d(96,96,3, stride=1,padding='same',bias=False)
+        self.maxpool2 = nn.MaxPool3d(kernel_size = 2, stride = 2)
+        self.dropout2=nn.Dropout(p=0.5)
+
+        self.Conv5 = nn.Conv3d(96,128,3, stride=1,padding='valid',bias=False)
+        self.Conv6 = nn.Conv3d(128,128,3, stride=1,padding='same',bias=False)
+        self.maxpool3 = nn.MaxPool3d(kernel_size = 2, stride = 2)
+        self.dropout3=nn.Dropout(p=0.5)
+
+        self.FC1 = nn.Linear(128*3*3*3, 1024,bias=False)
+        self.dropout4=nn.Dropout(p=0.5)
+        self.FC2 = nn.Linear(1024, 2,bias=False)
+
+   
+    def forward(self, x):
+        out = F.relu(self.Conv1(x))
+        out = F.relu(self.Conv2(out))
+        out = self.maxpool1(out)
+        out = self.dropout1(out)
+        out = F.relu(self.Conv3(out))
+        out = F.relu(self.Conv4(out))
+        out = self.maxpool2(out)
+        out = self.dropout2(out)
+        out = F.relu(self.Conv5(out))
+        out = F.relu(self.Conv6(out))
+        out = self.maxpool3(out)
+        out = self.dropout3(out)
+        out = out.reshape(out.size(0), -1)
+        out =self.FC1(out)
+        out = self.dropout4(out)
+        out =self.FC2(out)
+        
+        return out
 #############################################################################################
 
 print('--> defining seeds')
@@ -96,7 +142,6 @@ device=t.device
 if torch.cuda.is_available():
     device = torch.device("cuda:0")
 print('chosen device: ',device)
-
 print(os.getcwd())
 listdir=[direc for direc in os.listdir(datapath)]
 print('list',listdir)
@@ -114,6 +159,8 @@ test_subclasses=[testprefix+str(ele) for ele in my_classes]
 train_subclasses=['W'+str(ele) for ele in my_classes]
 print('train classes', train_subclasses)
 print('test classes', test_subclasses)
+print(os.getcwd())
+
 print('--> reading CSV data')
 if psi_type=='squared':
     temp_whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=train_subclasses)
@@ -121,12 +168,7 @@ if psi_type=='squared':
 else:
     temp_whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader_psi,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=train_subclasses)
     test_dataset=MyDatasetFolder(root=testpath,loader=pkl_file_loader_psi,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=test_subclasses)
-if size_samp!=5000:
-    print(size_samp)
-    indices = torch.randperm(len(temp_whole_dataset))[:size_samp]
-    whole_dataset = torch.utils.data.Subset(temp_whole_dataset,indices)
-else:
-    whole_dataset = whole_dataset   
+
 print('--> defining/reading DATA')
 test_set=0
 test_reject=0
@@ -158,39 +200,35 @@ val = torch.utils.data.DataLoader(
 test = torch.utils.data.DataLoader(
         dataset=test_set,
         batch_size=batch_size,
-       num_workers=16,
+        num_workers=16,
         shuffle=False)
 print('--> defining classes/labels')
-class_names = temp_whole_dataset.classes
+class_names = whole_dataset.classes
 print(class_names)
 inputs,labels,paths= next(iter(train))
 
 img_sizeX,img_sizeY= inputs.shape[-1],inputs.shape[-2]
 num_of_train_samples = len(training_set) # total training samples
-num_of_val_samples = len(validation_set) #total validation samples
+num_of_test_samples = len(validation_set) #total validation samples
 steps_per_epoch = np.ceil(num_of_train_samples // batch_size)
 number_classes = len(class_names)
 
 print('--> protocolling set-up')
 print('number of samples in the training set:', num_of_train_samples)
-print('number of samples in the validation set:', num_of_val_samples )
+print('number of samples in the validation set:', num_of_test_samples )
 print('number of samples in a training batch',len(train)) 
 print('number of samples in a validation batch',len(val))
 print('number of classes',number_classes )
 
 # ## building the CNN
 print('--> building the CNN')
-model=models.video.r3d_18()
+model=Ohtsuki3D()
 
-model.stem =nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(3,3,3), stride=(1,1,1), padding=(1,1,1), dilation=(1,1,1), bias=False)
-num_ftrs = model.fc.in_features # number of input features of the last layer which is fully connected (fc)
-#We modify the last layer in order to have 2 output: percolating or not
-model.fc=nn.Linear(num_ftrs, number_classes )
  #the model is sent to the GPU
 model = model.to(device)
 print('--> defining optimizer')
 optimizer=torch.optim.Adam(model.parameters(),lr=mylr)
-#optimizer=torch.optim.Adadelta(model.parameters(), lr=1.0, rho=0.9, eps=1e-06, weight_decay=0)
+#optimizer=torch.optim.Adadelta(model.parameters(), lr=mylr, rho=0.9, eps=1e-06, weight_decay=0)
 # defining the loss function
 criterion = nn.CrossEntropyLoss()
 
@@ -211,7 +249,7 @@ if flag==0:
     print('number of classes',number_classes )
 
     base_model = train_model(
-        model,train,val,
+        model,train,val,test,
         device, 
         criterion,optimizer,
         num_epochs,exp_lr_scheduler,savepath, 
@@ -219,21 +257,8 @@ if flag==0:
         batch_size,class_names)
 else:
     print('--> loading saved model')
-    temp_list_model=[files for files in os.listdir(savepath) if files.endswith('.pth') ]
-    print(savepath)
-    print('#############################')
-    first_parameter = next(model.parameters())
-    input_length = len(first_parameter.size())
-    if len(temp_list_model)!=0:
-        list_model=[savepath + files for files in temp_list_model]
-    else:
-        print('no model saved')
-    print(list_model[0])
-    print(os.getcwd())
-    list_model.sort(key=os.path.getctime)
-    print(list_model)
-    checkpoint=torch.load(list_model[-1])
-    model.load_state_dict(checkpoint['model_state_dict'])#,map_location='cpu')
+    checkpoint=torch.load(modelpath+'_best.pth')
+    model.load_state_dict(checkpoint['model_state_dict'],map_location='cpu')
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     val_loss=checkpoint['val loss']
     accuracy=checkpoint['train acc']
@@ -243,7 +268,9 @@ else:
     epochs=checkpoint['train epoch']
     model.eval()
 
-print('--> computing/saving outputs')
+print('--> computing/saving confusion matrices')
+#cm=simple_confusion_matrix(model,val,device,number_classes,class_names)
+#np.savetxt(cm_path,cm,fmt='%d')
 loss_file=[file for file in os.listdir(savepath) if 'loss.txt' in file]
 data=np.loadtxt(savepath+'/'+loss_file[0],unpack=True)
 epochs=data[0]
@@ -251,31 +278,46 @@ _loss=data[1]
 accuracy=data[2]
 val_loss=data[3]
 val_accuracy=data[4]
-
-print('--> saving loss curves')
 fig=plt.figure()
 plt.plot(epochs,val_loss, label='val loss')
 plt.plot(epochs,_loss, label='training loss')
 plt.legend(loc='upper left')
 fig.savefig(savepath+method+'_'+dataname+'_loss'+'.png',transparent=True)
 
-print('--> saving accuracy curves')
 fig=plt.figure()
 plt.plot(epochs,val_accuracy, label='val accuracy')
 plt.plot(epochs,accuracy, label='training accuracy')
 plt.legend(loc='upper left')
 fig.savefig(savepath+method+'_'+dataname+'_accuracy'+'.png',transparent=True)
 
-print('--> computing TRAINING confusion matrix')
-cm=simple_confusion_matrix(model,val,device,number_classes,class_names)
-np.savetxt(cm_path,cm,fmt='%d')
-print('--> computing TEST confusion matrix')
+cm_val=simple_confusion_matrix(model,val,device,number_classes,class_names)
+np.savetxt(cm_val_path,cm_val,fmt='%d')
 cm_test=simple_confusion_matrix(model,test,device,number_classes,class_names)
 np.savetxt(cm_test_path,cm_test,fmt='%d')
+percentage_correct(model,device,class_names,test,savepath,method,dataname)
 
-print('--> computing val/test predictions')
-classification_predictions(val,temp_whole_dataset,width,model,savepath,myseed,len(class_names),'val')
-classification_predictions(test,temp_whole_dataset,width,model,savepath,myseed,len(class_names),'test')
-percentage_correct(model,device,class_names,val,savepath,method,dataname)
 
-print('--> all DONE')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
