@@ -29,7 +29,7 @@ if ( len(sys.argv) >=10):
     flag=int(sys.argv[7])
     mylr=float(sys.argv[8])
     psi_type=str(sys.argv[9])
-    my_classes=[float(classe_ele) for classe_ele in sys.argv[10].split(',')]
+    my_classes=[str(classe_ele) for classe_ele in sys.argv[10].split(',')]
     
 else:
     print ('Number of', len(sys.argv), \
@@ -44,7 +44,7 @@ size_data=5000
 validation_split= my_validation_split
 batch_size=my_batch_size
 num_epochs= my_num_epochs
-subclasses=['W'+str(element) for element in my_classes] #my_classes#
+subclasses=my_classes
 nb_classes=len(subclasses)
 print('CLASSES',my_classes)
 print('###############')
@@ -55,7 +55,7 @@ dataname='L'+str(width)+'-'+str(my_size_samp)+'-Ohtsuki'
 data_test='L'+str(width)+'-500-Ohtsuki-test'
 #datapath = '/storage/disqs/'+'ML-Anderson3D/EvecRaws/'+dataname # SC-RTP
 datapath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+dataname_og
-testpath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+data_test
+#testpath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+data_test
 print(os.listdir(datapath))
 print(dataname,"\n",datapath)
 ##############################################################################
@@ -143,20 +143,9 @@ if torch.cuda.is_available():
     device = torch.device("cuda:0")
 print('chosen device: ',device)
 print(os.getcwd())
-listdir=[direc for direc in os.listdir(datapath)]
-print('list',listdir)
-if any('A' in ele for ele in listdir)==True:
-    prefix='A3-'+str(width)+'-E0.0-hD'
-else:
-    prefix='W'
-listdirtest=[direc for direc in os.listdir(testpath)]
-print('list',listdirtest)
-if any('A' in ele for ele in listdirtest)==True:
-    testprefix='A3-'+str(width)+'-E0.0-hD'
-else:
-    testprefix='W'
-test_subclasses=[testprefix+str(ele) for ele in my_classes]
-train_subclasses=['W'+str(ele) for ele in my_classes]
+
+test_subclasses=my_classes
+train_subclasses=my_classes
 print('train classes', train_subclasses)
 print('test classes', test_subclasses)
 print(os.getcwd())
@@ -164,10 +153,10 @@ print(os.getcwd())
 print('--> reading CSV data')
 if psi_type=='squared':
     temp_whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=train_subclasses)
-    test_dataset=MyDatasetFolder(root=testpath,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=test_subclasses)
+    #test_dataset=MyDatasetFolder(root=testpath,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=test_subclasses)
 else:
     temp_whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader_psi,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=train_subclasses)
-    test_dataset=MyDatasetFolder(root=testpath,loader=pkl_file_loader_psi,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=test_subclasses)
+    #test_dataset=MyDatasetFolder(root=testpath,loader=pkl_file_loader_psi,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=test_subclasses)
 
 print('--> defining/reading DATA')
 test_set=0
@@ -175,12 +164,12 @@ test_reject=0
 os.getcwd()
 
 data_size = len(whole_dataset)
-test_size = len(test_dataset)
+#test_size = len(test_dataset)
 # validation_split=0.1
 split=int(np.floor(validation_split*data_size))
 training=int(data_size-split)
-split_test=int(np.floor(0.5*test_size))
-size_test=int(test_size-split_test)
+#split_test=int(np.floor(0.5*test_size))
+#size_test=int(test_size-split_test)
 # split the data into training and validation
 training_set, validation_set= torch.utils.data.random_split(whole_dataset,(training,split))
 test_set, test_reject=torch.utils.data.random_split(test_dataset,(size_test,split_test))
@@ -197,11 +186,11 @@ val = torch.utils.data.DataLoader(
         batch_size=batch_size,
         num_workers=16,
         shuffle=False)
-test = torch.utils.data.DataLoader(
-        dataset=test_set,
-        batch_size=batch_size,
-        num_workers=16,
-        shuffle=False)
+#test = torch.utils.data.DataLoader(
+#        dataset=test_set,
+#        batch_size=batch_size,
+#        num_workers=16,
+#        shuffle=False)
 print('--> defining classes/labels')
 class_names = whole_dataset.classes
 print(class_names)
