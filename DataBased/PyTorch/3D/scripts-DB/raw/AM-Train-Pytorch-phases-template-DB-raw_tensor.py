@@ -97,7 +97,7 @@ class Ohtsuki3D(nn.Module):
         self.maxpool3 = nn.MaxPool3d(kernel_size = 2, stride = 2)
         self.dropout3=nn.Dropout(p=0.5)
 
-        self.FC1 = nn.Linear(128*3*3*3, 1024,bias=False)
+        self.FC1 = nn.Linear(128*5*5*5, 1024,bias=False)
         self.dropout4=nn.Dropout(p=0.5)
         self.FC2 = nn.Linear(1024, 2,bias=False)
 
@@ -199,7 +199,7 @@ val = torch.utils.data.DataLoader(
 #        num_workers=16,
 #        shuffle=False)
 print('--> defining classes/labels')
-class_names = whole_dataset.classes
+class_names = temp_whole_dataset.classes
 print(class_names)
 inputs,labels,paths= next(iter(train))
 
@@ -222,6 +222,7 @@ model=Ohtsuki3D()
 
  #the model is sent to the GPU
 model = model.to(device)
+summary(model, (1, my_size, my_size, my_size))
 print('--> defining optimizer')
 optimizer=torch.optim.Adam(model.parameters(),lr=mylr)
 #optimizer=torch.optim.Adadelta(model.parameters(), lr=mylr, rho=0.9, eps=1e-06, weight_decay=0)
@@ -238,6 +239,7 @@ if torch.cuda.is_available():
 #the model is sent to the GPU
 #model=model.to(device)
 model=model.double()
+
 if flag==0:
     print('--> starting training epochs')
     print('number of epochs',num_epochs )
@@ -291,29 +293,4 @@ np.savetxt(cm_val_path,cm_val,fmt='%d')
 cm_test=simple_confusion_matrix(model,test,device,number_classes,class_names)
 np.savetxt(cm_test_path,cm_test,fmt='%d')
 percentage_correct(model,device,class_names,test,savepath,method,dataname)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
