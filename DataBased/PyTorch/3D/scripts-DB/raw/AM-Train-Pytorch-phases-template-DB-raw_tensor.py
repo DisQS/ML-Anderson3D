@@ -97,7 +97,7 @@ class Ohtsuki3D(nn.Module):
         self.maxpool3 = nn.MaxPool3d(kernel_size = 2, stride = 2)
         self.dropout3=nn.Dropout(p=0.5)
 
-        self.FC1 = nn.Linear(128*5*5*5, 1024,bias=False)
+        self.FC1 = nn.Linear(128*8*8*8, 1024,bias=False)
         self.dropout4=nn.Dropout(p=0.5)
         self.FC2 = nn.Linear(1024, 2,bias=False)
 
