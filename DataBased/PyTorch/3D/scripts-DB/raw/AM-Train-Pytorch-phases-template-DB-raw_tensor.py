@@ -40,7 +40,7 @@ print('--> defining parameters')
 myseed=SEED
 width= my_size
 size_samp=my_size_samp
-size_data=500
+size_data=5000
 validation_split= my_validation_split
 batch_size=my_batch_size
 num_epochs= my_num_epochs
@@ -56,7 +56,7 @@ dataname='L'+str(width)+'-'+str(my_size_samp)+'-Ohtsuki'
 data_test='L'+str(width)+'-500-Ohtsuki-test'
 #datapath = '/storage/disqs/'+'ML-Anderson3D/EvecRaws/'+dataname # SC-RTP
 datapath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+dataname_og
-#testpath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+data_test
+testpath = '/home/physics/phsht/Projects/ML-Anderson3D/Data/EvecPKL/'+data_test
 print(os.listdir(datapath))
 print(dataname,"\n",datapath)
 ##############################################################################
@@ -97,7 +97,7 @@ class Ohtsuki3D(nn.Module):
         self.maxpool3 = nn.MaxPool3d(kernel_size = 2, stride = 2)
         self.dropout3=nn.Dropout(p=0.5)
 
-        self.FC1 = nn.Linear(128*5*5*5, 1024,bias=False)
+        self.FC1 = nn.Linear(128*8*8*8, 1024,bias=False)
         self.dropout4=nn.Dropout(p=0.5)
         self.FC2 = nn.Linear(1024, 2,bias=False)
 
@@ -154,10 +154,10 @@ print(os.getcwd())
 print('--> reading CSV data')
 if psi_type=='squared':
     temp_whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=subclasses)
-    #test_dataset=MyDatasetFolder(root=testpath,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=test_subclasses)
+    test_dataset=MyDatasetFolder(root=testpath,loader=pkl_file_loader,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=test_subclasses)
 else:
     temp_whole_dataset=MyDatasetFolder(root=datapath,loader=pkl_file_loader_psi,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=subclasses)
-    #test_dataset=MyDatasetFolder(root=testpath,loader=pkl_file_loader_psi,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=test_subclasses)
+    test_dataset=MyDatasetFolder(root=testpath,loader=pkl_file_loader_psi,transform=torchvision.transforms.ToTensor(),extensions='.pkl',subclasses=test_subclasses)
 
 if size_samp!=5000:
     print(size_samp)
@@ -171,15 +171,15 @@ test_reject=0
 os.getcwd()
 
 data_size = len(whole_dataset)
-#test_size = len(test_dataset)
-# validation_split=0.1
+test_size = len(test_dataset)
+validation_split=0.1
 split=int(np.floor(validation_split*data_size))
 training=int(data_size-split)
-#split_test=int(np.floor(0.5*test_size))
-#size_test=int(test_size-split_test)
+split_test=int(np.floor(0.5*test_size))
+size_test=int(test_size-split_test)
 # split the data into training and validation
 training_set, validation_set= torch.utils.data.random_split(whole_dataset,(training,split))
-#test_set, test_reject=torch.utils.data.random_split(test_dataset,(size_test,split_test))
+test_set, test_reject=torch.utils.data.random_split(test_dataset,(size_test,split_test))
 print('--> loading training data')
 train = torch.utils.data.DataLoader(
         dataset=training_set,
@@ -193,11 +193,11 @@ val = torch.utils.data.DataLoader(
         batch_size=batch_size,
         num_workers=16,
         shuffle=False)
-#test = torch.utils.data.DataLoader(
-#        dataset=test_set,
-#        batch_size=batch_size,
-#        num_workers=16,
-#        shuffle=False)
+test = torch.utils.data.DataLoader(
+        dataset=test_set,
+        batch_size=batch_size,
+        num_workers=16,
+        shuffle=False)
 print('--> defining classes/labels')
 class_names = temp_whole_dataset.classes
 print(class_names)
@@ -205,20 +205,28 @@ inputs,labels,paths= next(iter(train))
 
 img_sizeX,img_sizeY= inputs.shape[-1],inputs.shape[-2]
 num_of_train_samples = len(training_set) # total training samples
-num_of_test_samples = len(validation_set) #total validation samples
+num_of_val_samples = len(validation_set) #total validation samples
 steps_per_epoch = np.ceil(num_of_train_samples // batch_size)
 number_classes = len(class_names)
 
 print('--> protocolling set-up')
 print('number of samples in the training set:', num_of_train_samples)
-print('number of samples in the validation set:', num_of_test_samples )
+print('number of samples in the validation set:', num_of_val_samples )
 print('number of samples in a training batch',len(train)) 
 print('number of samples in a validation batch',len(val))
 print('number of classes',number_classes )
 
 # ## building the CNN
 print('--> building the CNN')
-model=Ohtsuki3D()
+#model=Ohtsuki3D()
+model=models.video.r3d_18()
+
+model.stem =nn.Conv3d(in_channels=1, out_channels=64, kernel_size=(3,3,3), stride=(1,1,1), padding=(1,1,1), dilation=(1,1,1), bias=False)
+num_ftrs = model.fc.in_features # number of input features of the last layer which is fully connected (fc)
+#We modify the last layer in order to have 2 output: percolating or not
+model.fc=nn.Linear(num_ftrs, number_classes )
+ #the model is sent to the GPU
+#model = model.to(device)
 
  #the model is sent to the GPU
 model = model.to(device)
