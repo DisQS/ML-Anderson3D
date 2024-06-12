@@ -34,6 +34,8 @@ jobfile="training-"$seed".sh"
 #!/bin/bash
 #SBATCH --time=48:00:00
 #SBATCH --partition=gpu
+##SBATCH --time=00:30:00
+##SBATCH --partition=gpu-devel
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
